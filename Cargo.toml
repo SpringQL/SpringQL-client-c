@@ -6,5 +6,8 @@ version = "0.1.0"
 
 edition = "2021"
 
+[build-dependencies]
+cbindgen = "0.20"
+
 [dependencies]
 springql-core = {path = "../SpringQL/SpringQL-core"}
