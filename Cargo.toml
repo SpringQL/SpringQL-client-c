@@ -1,0 +1,9 @@
+[package]
+authors = ["Sho Nakatani <lay.sakura@gmail.com>"]
+license = "TBD"
+name = "springql-client-c"
+version = "0.1.0"
+
+edition = "2021"
+
+[dependencies]
