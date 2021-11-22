@@ -3,11 +3,12 @@
 use std::{
     convert::identity,
     ffi::CStr,
-    os::raw::{c_char, c_int, c_uchar},
+    os::raw::{c_char, c_int},
     panic::{catch_unwind, UnwindSafe},
 };
 
 use ::springql_core::error::SpringError;
+use cstr::strcpy;
 use spring_last_errmsg::{update_last_error, LastError};
 use springql_core::low_level_rs as springql_core;
 
@@ -146,6 +147,33 @@ pub unsafe extern "C" fn spring_column_int(
         *out = r;
         SpringErrno::Ok
     })
+}
+
+/// See: springql_core::api::spring_column_text
+///
+/// This returns UTF-8 string into `out`.
+///
+/// # Returns
+///
+/// - `0`: if there are no recent errors.
+/// - `> 0`: the length of the recent error message.
+/// - `< 0`: SpringErrno
+///
+/// # Safety
+///
+/// This function is unsafe because it cast `*mut pipeline` into `&`.
+#[no_mangle]
+pub unsafe extern "C" fn spring_column_text(
+    row: *const SpringRow,
+    i_col: u16,
+    out: *mut c_char,
+    out_len: c_int,
+) -> c_int {
+    let row = &*row;
+    let i_col = i_col as usize;
+
+    with_catch(|| springql_core::spring_column_text(&row.0, i_col))
+        .map_or_else(|errno| errno as c_int, |text| strcpy(&text, out, out_len))
 }
 
 fn with_catch<F, R>(f: F) -> Result<R, SpringErrno>

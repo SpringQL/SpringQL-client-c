@@ -4,7 +4,6 @@ use std::{
     error::Error,
     fmt::Display,
     os::raw::{c_char, c_int},
-    ptr, slice,
 };
 
 use log::{error, warn};

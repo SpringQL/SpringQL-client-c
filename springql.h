@@ -114,6 +114,23 @@ enum SpringErrno spring_row_close(SpringRow *row);
 enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *out);
 
 /**
+ * See: springql_core::api::spring_column_text
+ *
+ * This returns UTF-8 string into `out`.
+ *
+ * # Returns
+ *
+ * - `0`: if there are no recent errors.
+ * - `> 0`: the length of the recent error message.
+ * - `< 0`: SpringErrno
+ *
+ * # Safety
+ *
+ * This function is unsafe because it cast `*mut pipeline` into `&`.
+ */
+int spring_column_text(const SpringRow *row, uint16_t i_col, char *out, int out_len);
+
+/**
  * Write the most recent error message into a caller-provided buffer as a UTF-8
  * string, returning the number of bytes written.
  *
