@@ -105,7 +105,6 @@ int main()
 
     pop_print(pipeline);
 
-    // Close the pipeline
     ret = spring_close(pipeline);
     assert_ok(ret);
 
