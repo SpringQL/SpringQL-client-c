@@ -11,3 +11,5 @@ cbindgen = "0.20"
 
 [dependencies]
 springql-core = {path = "../SpringQL/SpringQL-core"}
+
+log = "0.4"
