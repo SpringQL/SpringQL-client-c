@@ -47,13 +47,6 @@ void setup_pipeline(const SpringPipeline *pipeline)
 
     ret = spring_command(
         pipeline,
-        "CREATE PUMP pu_projection AS"
-        "  INSERT INTO sink_trade (ts, amount)"
-        "  SELECT STREAM ts, amount FROM source_trade;");
-    assert_ok(ret);
-
-    ret = spring_command(
-        pipeline,
         "CREATE SINK STREAM sink_trade ("
         "  ts TIMESTAMP NOT NULL,"
         "  ticker TEXT NOT NULL,"
@@ -61,6 +54,13 @@ void setup_pipeline(const SpringPipeline *pipeline)
         ") SERVER IN_MEMORY_QUEUE OPTIONS ("
         "  NAME 'q_sink_trade'"
         ");");
+    assert_ok(ret);
+
+    ret = spring_command(
+        pipeline,
+        "CREATE PUMP pu_projection AS"
+        "  INSERT INTO sink_trade (ts, amount)"
+        "  SELECT STREAM ts, amount FROM source_trade;");
     assert_ok(ret);
 
     ret = spring_command(
