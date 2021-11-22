@@ -68,7 +68,7 @@ pub unsafe extern "C" fn spring_close(pipeline: *mut SpringPipeline) -> SpringEr
 /// This function is unsafe because it cast `*mut pipeline` into `&`.
 #[no_mangle]
 pub unsafe extern "C" fn spring_command(
-    pipeline: *mut SpringPipeline,
+    pipeline: *const SpringPipeline,
     sql: *const c_char,
 ) -> SpringErrno {
     let pipeline = &*pipeline;
@@ -90,7 +90,7 @@ pub unsafe extern "C" fn spring_command(
 /// This function is unsafe because it cast `*mut pipeline` into `&`.
 #[no_mangle]
 pub unsafe extern "C" fn spring_pop(
-    pipeline: *mut SpringPipeline,
+    pipeline: *const SpringPipeline,
     queue: *const c_char,
     mut row: *mut SpringRow,
 ) -> SpringErrno {
