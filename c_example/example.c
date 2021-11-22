@@ -40,7 +40,7 @@ void setup_pipeline(const SpringPipeline *pipeline)
         "  amount INTEGER NOT NULL"
         ") SERVER NET_SERVER OPTIONS ("
         "  PROTOCOL 'TCP',"
-        "  REMOTE_HOST 'localhost',"
+        "  REMOTE_HOST '127.0.0.1',"
         "  REMOTE_PORT '19876'"
         ");");
     assert_ok(ret);
@@ -81,16 +81,16 @@ void pop_print(const SpringPipeline *pipeline)
         SpringRow *row = spring_pop(pipeline, "q_sink_trade");
         assert_not_null(row);
 
-        int r = spring_column_text(&row, 0, (char *)ts, ts_len);
+        int r = spring_column_text(row, 0, (char *)ts, ts_len);
         assert(r == strlen(ts));
 
         int amount;
-        ret = spring_column_int(&row, 1, &amount);
+        ret = spring_column_int(row, 1, &amount);
         assert_ok(ret);
 
         printf("[row#%d] ts=%s amount=%d\n", i, ts, amount);
 
-        spring_row_close(&row);
+        spring_row_close(row);
     }
 }
 
