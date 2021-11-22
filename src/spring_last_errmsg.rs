@@ -106,17 +106,17 @@ pub unsafe extern "C" fn spring_last_errmsg(buffer: *mut c_char, length: c_int) 
 
     let error_message = last_error.to_string();
 
-    let buffer = slice::from_raw_parts_mut(buffer as *mut u8, length as usize);
-
-    if error_message.len() >= buffer.len() {
+    if error_message.len() >= length as usize {
         warn!("Buffer provided for writing the last error message is too small.");
         warn!(
             "Expected at least {} bytes but got {}",
             error_message.len() + 1,
-            buffer.len()
+            length
         );
         return SpringErrno::CInsufficient as c_int;
     }
+
+    let buffer = slice::from_raw_parts_mut(buffer as *mut u8, length as usize);
 
     ptr::copy_nonoverlapping(
         error_message.as_ptr(),
