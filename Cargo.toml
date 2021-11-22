@@ -6,4 +6,14 @@ version = "0.1.0"
 
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib"]
+name = "springql_client"
+
+[build-dependencies]
+cbindgen = "0.20"
+
 [dependencies]
+springql-core = {path = "../SpringQL/SpringQL-core"}
+
+log = "0.4"
