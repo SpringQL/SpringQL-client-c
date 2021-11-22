@@ -58,6 +58,20 @@ enum SpringErrno spring_open(SpringPipeline *pipeline);
 enum SpringErrno spring_close(SpringPipeline *pipeline);
 
 /**
+ * See: springql_core::api::spring_command
+ *
+ * # Returns
+ *
+ * - `0`: if there are no recent errors.
+ * - `< 0`: SpringErrno
+ *
+ * # Safety
+ *
+ * This function is unsafe because it cast `*mut pipeline` into `&`.
+ */
+enum SpringErrno spring_command(SpringPipeline *pipeline, const char *sql);
+
+/**
  * Write the most recent error message into a caller-provided buffer as a UTF-8
  * string, returning the number of bytes written.
  *

@@ -2,6 +2,8 @@
 
 use std::{
     convert::identity,
+    ffi::CStr,
+    os::raw::c_char,
     panic::{catch_unwind, UnwindSafe},
 };
 
@@ -48,6 +50,28 @@ pub unsafe extern "C" fn spring_close(pipeline: *mut SpringPipeline) -> SpringEr
         drop(Box::from_raw(pipeline));
         SpringErrno::Ok
     }
+}
+
+/// See: springql_core::api::spring_command
+///
+/// # Returns
+///
+/// - `0`: if there are no recent errors.
+/// - `< 0`: SpringErrno
+///
+/// # Safety
+///
+/// This function is unsafe because it cast `*mut pipeline` into `&`.
+#[no_mangle]
+pub unsafe extern "C" fn spring_command(
+    pipeline: *mut SpringPipeline,
+    sql: *const c_char,
+) -> SpringErrno {
+    let pipeline = &*pipeline;
+    let sql = CStr::from_ptr(sql).to_string_lossy().into_owned();
+
+    with_catch(|| springql_core::spring_command(&pipeline.0, &sql))
+        .map_or_else(identity, |()| SpringErrno::Ok)
 }
 
 fn with_catch<F, R>(f: F) -> Result<R, SpringErrno>
