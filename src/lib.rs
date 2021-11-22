@@ -103,6 +103,24 @@ pub unsafe extern "C" fn spring_pop(
     })
 }
 
+/// # Returns
+///
+/// - `0`: if there are no recent errors.
+/// - `< 0`: SpringErrno
+///
+/// # Safety
+///
+/// This function is unsafe because it cast `*mut row` into `&mut`.
+#[no_mangle]
+pub unsafe extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
+    if row.is_null() {
+        SpringErrno::CNull
+    } else {
+        drop(Box::from_raw(row));
+        SpringErrno::Ok
+    }
+}
+
 fn with_catch<F, R>(f: F) -> Result<R, SpringErrno>
 where
     F: FnOnce() -> Result<R, SpringError> + UnwindSafe,

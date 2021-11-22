@@ -88,6 +88,18 @@ enum SpringErrno spring_command(SpringPipeline *pipeline, const char *sql);
 enum SpringErrno spring_pop(SpringPipeline *pipeline, const char *queue, SpringRow *row);
 
 /**
+ * # Returns
+ *
+ * - `0`: if there are no recent errors.
+ * - `< 0`: SpringErrno
+ *
+ * # Safety
+ *
+ * This function is unsafe because it cast `*mut row` into `&mut`.
+ */
+enum SpringErrno spring_row_close(SpringRow *row);
+
+/**
  * Write the most recent error message into a caller-provided buffer as a UTF-8
  * string, returning the number of bytes written.
  *
