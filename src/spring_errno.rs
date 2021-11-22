@@ -3,6 +3,7 @@ use springql_core::error::SpringError;
 /// Errno (error number) to be returned erroneous functions.
 ///
 /// See springql_core::api::error::SpringError for details of each error reason.
+#[non_exhaustive]
 #[repr(C)]
 pub enum SpringErrno {
     Ok = 0,
