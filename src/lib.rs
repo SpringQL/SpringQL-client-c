@@ -1,9 +1,12 @@
 //! C-API
 
-#![deny(missing_debug_implementations, missing_docs)]
+use spring_errno::SpringErrno;
 
-/// x
+pub mod spring_errno;
+pub mod spring_last_errmsg;
+
+/// See: springql_core::api::spring_open
 #[no_mangle]
-pub extern "C" fn rust_function() {
-    // ...
+pub extern "C" fn spring_open() -> SpringErrno {
+    todo!()
 }

@@ -2,7 +2,7 @@ use springql_core::error::SpringError;
 
 /// Errno (error number) to be returned erroneous functions.
 ///
-/// See springql-core::api::error::SpringError for details of each error reason.
+/// See springql_core::api::error::SpringError for details of each error reason.
 #[repr(C)]
 pub enum SpringErrno {
     Ok = 0,
@@ -19,6 +19,11 @@ pub enum SpringErrno {
     InvalidFormat = -8,
     Unavailable = -9,
     Sql = -10,
+
+    /// Insufficient buffer size
+    CInsufficient = -126,
+    /// Invalid null pointer
+    CNull = -127,
 }
 
 impl From<SpringError> for SpringErrno {
