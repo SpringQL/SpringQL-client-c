@@ -4,7 +4,7 @@ project(springql-example VERSION 0.1.0)
 include_directories(..)
 link_directories(../target/debug)
 
-add_library(springql_client SHARED IMPORTED)
 add_executable(run_example example.c)
+target_link_libraries(run_example springql_client)
 
 add_compile_options(-Wall -Wextra -pedantic -Werror)
