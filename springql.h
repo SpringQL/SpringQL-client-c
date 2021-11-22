@@ -33,7 +33,7 @@ typedef enum SpringErrno {
   CNull = -127,
 } SpringErrno;
 
-typedef SpringPipeline SpringPipeline;
+typedef const void *SpringPipeline;
 
 typedef SpringRow SpringRow;
 

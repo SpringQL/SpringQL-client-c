@@ -2,7 +2,8 @@
 
 use std::{
     convert::identity,
-    ffi::CStr,
+    ffi::{c_void, CStr},
+    mem,
     os::raw::{c_char, c_int},
     panic::{catch_unwind, UnwindSafe},
 };
@@ -21,7 +22,7 @@ pub(crate) mod cstr;
 
 #[non_exhaustive]
 #[repr(transparent)]
-pub struct SpringPipeline(springql_core::SpringPipeline);
+pub struct SpringPipeline(*const c_void);
 
 #[non_exhaustive]
 #[repr(transparent)]
@@ -36,7 +37,7 @@ pub struct SpringRow(springql_core::SpringRow);
 #[no_mangle]
 pub extern "C" fn spring_open(mut pipeline: *mut SpringPipeline) -> SpringErrno {
     with_catch(springql_core::spring_open).map_or_else(identity, |p| {
-        pipeline = Box::into_raw(Box::new(SpringPipeline(p)));
+        pipeline = Box::into_raw(Box::new(SpringPipeline(unsafe { mem::transmute(&p) })));
         SpringErrno::Ok
     })
 }
@@ -74,10 +75,10 @@ pub unsafe extern "C" fn spring_command(
     pipeline: *const SpringPipeline,
     sql: *const c_char,
 ) -> SpringErrno {
-    let pipeline = &*pipeline;
+    let pipeline = &*((*pipeline).0 as *const springql_core::SpringPipeline);
     let sql = CStr::from_ptr(sql).to_string_lossy().into_owned();
 
-    with_catch(|| springql_core::spring_command(&pipeline.0, &sql))
+    with_catch(|| springql_core::spring_command(pipeline, &sql))
         .map_or_else(identity, |()| SpringErrno::Ok)
 }
 
@@ -97,10 +98,10 @@ pub unsafe extern "C" fn spring_pop(
     queue: *const c_char,
     mut row: *mut SpringRow,
 ) -> SpringErrno {
-    let pipeline = &*pipeline;
+    let pipeline = &*((*pipeline).0 as *const springql_core::SpringPipeline);
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
 
-    with_catch(|| springql_core::spring_pop(&pipeline.0, &queue)).map_or_else(identity, |r| {
+    with_catch(|| springql_core::spring_pop(pipeline, &queue)).map_or_else(identity, |r| {
         row = Box::into_raw(Box::new(SpringRow(r)));
         SpringErrno::Ok
     })
