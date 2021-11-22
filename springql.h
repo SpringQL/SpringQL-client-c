@@ -111,7 +111,7 @@ enum SpringErrno spring_row_close(SpringRow *row);
  *
  * This function is unsafe because it cast `*mut pipeline` into `&`.
  */
-enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *value);
+enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *out);
 
 /**
  * Write the most recent error message into a caller-provided buffer as a UTF-8

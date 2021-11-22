@@ -10,7 +10,7 @@ use std::{
 use log::{error, warn};
 use springql_core::error::SpringError;
 
-use crate::spring_errno::SpringErrno;
+use crate::{cstr::strcpy, spring_errno::SpringErrno};
 
 thread_local! {
     static LAST_ERROR: RefCell<Option<Box<dyn Error>>> = RefCell::new(None);
@@ -106,29 +106,7 @@ pub unsafe extern "C" fn spring_last_errmsg(buffer: *mut c_char, length: c_int) 
 
     let error_message = last_error.to_string();
 
-    if error_message.len() >= length as usize {
-        warn!("Buffer provided for writing the last error message is too small.");
-        warn!(
-            "Expected at least {} bytes but got {}",
-            error_message.len() + 1,
-            length
-        );
-        return SpringErrno::CInsufficient as c_int;
-    }
-
-    let buffer = slice::from_raw_parts_mut(buffer as *mut u8, length as usize);
-
-    ptr::copy_nonoverlapping(
-        error_message.as_ptr(),
-        buffer.as_mut_ptr(),
-        error_message.len(),
-    );
-
-    // Add a trailing null so people using the string as a `char *` don't
-    // accidentally read into garbage.
-    buffer[error_message.len()] = 0;
-
-    error_message.len() as c_int
+    strcpy(&error_message, buffer, length)
 }
 
 /// Calculate the number of bytes in the last error's error message **not**

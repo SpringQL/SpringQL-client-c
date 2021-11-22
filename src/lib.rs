@@ -3,7 +3,7 @@
 use std::{
     convert::identity,
     ffi::CStr,
-    os::raw::{c_char, c_int},
+    os::raw::{c_char, c_int, c_uchar},
     panic::{catch_unwind, UnwindSafe},
 };
 
@@ -15,6 +15,8 @@ use spring_errno::SpringErrno;
 
 pub mod spring_errno;
 pub mod spring_last_errmsg;
+
+pub(crate) mod cstr;
 
 #[non_exhaustive]
 #[repr(transparent)]
@@ -135,13 +137,13 @@ pub unsafe extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
 pub unsafe extern "C" fn spring_column_int(
     row: *const SpringRow,
     i_col: u16,
-    value: *mut c_int,
+    out: *mut c_int,
 ) -> SpringErrno {
     let row = &*row;
     let i_col = i_col as usize;
 
     with_catch(|| springql_core::spring_column_i32(&row.0, i_col)).map_or_else(identity, |r| {
-        *value = r;
+        *out = r;
         SpringErrno::Ok
     })
 }
