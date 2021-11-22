@@ -100,6 +100,20 @@ enum SpringErrno spring_pop(const SpringPipeline *pipeline, const char *queue, S
 enum SpringErrno spring_row_close(SpringRow *row);
 
 /**
+ * See: springql_core::api::spring_column_i32
+ *
+ * # Returns
+ *
+ * - `0`: if there are no recent errors.
+ * - `< 0`: SpringErrno
+ *
+ * # Safety
+ *
+ * This function is unsafe because it cast `*mut pipeline` into `&`.
+ */
+enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *value);
+
+/**
  * Write the most recent error message into a caller-provided buffer as a UTF-8
  * string, returning the number of bytes written.
  *

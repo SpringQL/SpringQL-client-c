@@ -3,7 +3,7 @@
 use std::{
     convert::identity,
     ffi::CStr,
-    os::raw::c_char,
+    os::raw::{c_char, c_int},
     panic::{catch_unwind, UnwindSafe},
 };
 
@@ -119,6 +119,31 @@ pub unsafe extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
         drop(Box::from_raw(row));
         SpringErrno::Ok
     }
+}
+
+/// See: springql_core::api::spring_column_i32
+///
+/// # Returns
+///
+/// - `0`: if there are no recent errors.
+/// - `< 0`: SpringErrno
+///
+/// # Safety
+///
+/// This function is unsafe because it cast `*mut pipeline` into `&`.
+#[no_mangle]
+pub unsafe extern "C" fn spring_column_int(
+    row: *const SpringRow,
+    i_col: u16,
+    value: *mut c_int,
+) -> SpringErrno {
+    let row = &*row;
+    let i_col = i_col as usize;
+
+    with_catch(|| springql_core::spring_column_i32(&row.0, i_col)).map_or_else(identity, |r| {
+        *value = r;
+        SpringErrno::Ok
+    })
 }
 
 fn with_catch<F, R>(f: F) -> Result<R, SpringErrno>
