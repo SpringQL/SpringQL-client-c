@@ -9,13 +9,13 @@ use std::{
 
 use ::springql_core::error::SpringError;
 use cstr::strcpy;
-use spring_last_errmsg::{update_last_error, LastError};
+use spring_last_err::{update_last_error, LastError};
 use springql_core::low_level_rs as springql_core;
 
 use spring_errno::SpringErrno;
 
 pub mod spring_errno;
-pub mod spring_last_errmsg;
+pub mod spring_last_err;
 
 pub(crate) mod cstr;
 
