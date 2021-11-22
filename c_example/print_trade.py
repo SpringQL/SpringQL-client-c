@@ -18,12 +18,13 @@ def current_timestamp():
 
 def gen_ticker():
     return random.choice([
-        'ORCL'
+        'ORCL', 'GOOGL', 'APPL',
     ])
 
 
 def gen_amount():
-    return 100
+    return random.randrange(1, 10) * 100
 
 
-print(json.dumps(gen_trade()))
+for _ in range(5):
+    print(json.dumps(gen_trade()))

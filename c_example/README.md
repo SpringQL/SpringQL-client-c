@@ -3,7 +3,7 @@
 ### Running a TCP server to generate trade data in JSON
 
 ```bash
-bash -c "trap exit INT; while :; do python print_trade.py | nc -l 19876; done"
+python print_trade.py | nc -l 19876
 ```
 
 ### Build and run the example
