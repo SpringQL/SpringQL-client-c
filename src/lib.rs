@@ -1,6 +1,12 @@
 //! C-API
 
-use spring_last_errmsg::update_last_error;
+use std::{
+    convert::identity,
+    panic::{catch_unwind, UnwindSafe},
+};
+
+use ::springql_core::error::SpringError;
+use spring_last_errmsg::{update_last_error, LastError};
 use springql_core::low_level_rs as springql_core;
 
 use spring_errno::SpringErrno;
@@ -20,12 +26,10 @@ pub struct SpringPipeline(springql_core::SpringPipeline);
 /// - `< 0`: SpringErrno
 #[no_mangle]
 pub extern "C" fn spring_open(mut pipeline: *mut SpringPipeline) -> SpringErrno {
-    springql_core::spring_open()
-        .map(|p| {
-            pipeline = Box::into_raw(Box::new(SpringPipeline(p)));
-            SpringErrno::Ok
-        })
-        .unwrap_or_else(update_last_error)
+    with_catch(springql_core::spring_open).map_or_else(identity, |p| {
+        pipeline = Box::into_raw(Box::new(SpringPipeline(p)));
+        SpringErrno::Ok
+    })
 }
 
 /// # Returns
@@ -44,4 +48,20 @@ pub unsafe extern "C" fn spring_close(pipeline: *mut SpringPipeline) -> SpringEr
         drop(Box::from_raw(pipeline));
         SpringErrno::Ok
     }
+}
+
+fn with_catch<F, R>(f: F) -> Result<R, SpringErrno>
+where
+    F: FnOnce() -> Result<R, SpringError> + UnwindSafe,
+{
+    catch_unwind(|| f().map_err(LastError::SpringErr))
+        .unwrap_or_else(|panic_err| Err(LastError::UnwindErr(panic_err)))
+        .map_err(|last_err| {
+            let errno = match &last_err {
+                LastError::SpringErr(e) => SpringErrno::from(e),
+                LastError::UnwindErr(_) => SpringErrno::Unknown,
+            };
+            update_last_error(last_err);
+            errno
+        })
 }

@@ -1,6 +1,8 @@
 use std::{
+    any::Any,
     cell::RefCell,
     error::Error,
+    fmt::Display,
     os::raw::{c_char, c_int},
     ptr, slice,
 };
@@ -18,8 +20,40 @@ fn take_last_error() -> Option<Box<dyn Error>> {
     LAST_ERROR.with(|prev| prev.borrow_mut().take())
 }
 
+#[derive(Debug)]
+pub(super) enum LastError {
+    SpringErr(SpringError),
+    UnwindErr(Box<dyn Any + Send + 'static>),
+}
+
+impl Error for LastError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            LastError::SpringErr(e) => e.source(),
+            LastError::UnwindErr(_) => None,
+        }
+    }
+}
+impl Display for LastError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            LastError::SpringErr(e) => format!("{}", e),
+            LastError::UnwindErr(any) => {
+                if let Some(s) = any.downcast_ref::<String>() {
+                    s.clone()
+                } else if let Some(s) = any.downcast_ref::<&str>() {
+                    s.to_string()
+                } else {
+                    "a panic occurred".to_string()
+                }
+            }
+        };
+        write!(f, "{}", s)
+    }
+}
+
 /// Update the most recent error, clearing whatever may have been there before.
-pub(super) fn update_last_error(err: SpringError) -> SpringErrno {
+pub(super) fn update_last_error(err: LastError) {
     error!("Setting LAST_ERROR: {}", err);
 
     {
@@ -32,13 +66,9 @@ pub(super) fn update_last_error(err: SpringError) -> SpringErrno {
         }
     }
 
-    let errno = SpringErrno::from(&err);
-
     LAST_ERROR.with(|prev| {
         *prev.borrow_mut() = Some(Box::new(err));
     });
-
-    errno
 }
 
 /// Write the most recent error message into a caller-provided buffer as a UTF-8
