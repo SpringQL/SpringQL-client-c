@@ -33,19 +33,19 @@ typedef enum SpringErrno {
   CNull = -127,
 } SpringErrno;
 
-typedef const void *SpringPipeline;
+typedef void *SpringPipeline;
 
-typedef const void *SpringRow;
+typedef void *SpringRow;
 
 /**
  * See: springql_core::api::spring_open
  *
  * # Returns
  *
- * - `0`: if there are no recent errors.
- * - `< 0`: SpringErrno
+ * - non-NULL: on success
+ * - NULL: on failure. Check spring_last_err() for details.
  */
-enum SpringErrno spring_open(SpringPipeline *pipeline);
+SpringPipeline *spring_open(void);
 
 /**
  * # Returns
@@ -78,14 +78,14 @@ enum SpringErrno spring_command(const SpringPipeline *pipeline, const char *sql)
  *
  * # Returns
  *
- * - `0`: if there are no recent errors.
- * - `< 0`: SpringErrno
+ * - non-NULL: on success
+ * - NULL: on failure. Check spring_last_err() for details.
  *
  * # Safety
  *
  * This function is unsafe because it uses raw pointer.
  */
-enum SpringErrno spring_pop(const SpringPipeline *pipeline, const char *queue, SpringRow *row);
+SpringRow *spring_pop(const SpringPipeline *pipeline, const char *queue);
 
 /**
  * # Returns

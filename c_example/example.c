@@ -3,6 +3,31 @@
 #include <string.h>
 #include <stdio.h>
 
+void abort_with_report()
+{
+    SpringErrno errno;
+    char errmsg[1024];
+    spring_last_err(&errno, errmsg, 1024);
+    fprintf(stderr, "Error occurred (%d): %s", errno, errmsg);
+    abort();
+}
+
+void assert_ok(SpringErrno ret)
+{
+    if (ret != Ok)
+    {
+        abort_with_report();
+    }
+}
+
+void assert_not_null(void *p)
+{
+    if (p == NULL)
+    {
+        abort_with_report();
+    }
+}
+
 void setup_pipeline(const SpringPipeline *pipeline)
 {
     SpringErrno ret;
@@ -18,14 +43,14 @@ void setup_pipeline(const SpringPipeline *pipeline)
         "  REMOTE_HOST 'localhost',"
         "  REMOTE_PORT '19876'"
         ");");
-    assert(ret == Ok);
+    assert_ok(ret);
 
     ret = spring_command(
         pipeline,
         "CREATE PUMP pu_projection AS"
         "  INSERT INTO sink_trade (ts, amount)"
         "  SELECT STREAM ts, amount FROM source_trade;");
-    assert(ret == Ok);
+    assert_ok(ret);
 
     ret = spring_command(
         pipeline,
@@ -36,12 +61,12 @@ void setup_pipeline(const SpringPipeline *pipeline)
         ") SERVER IN_MEMORY_QUEUE OPTIONS ("
         "  NAME 'q_sink_trade'"
         ");");
-    assert(ret == Ok);
+    assert_ok(ret);
 
     ret = spring_command(
         pipeline,
         "ALTER PUMP pu_projection START;");
-    assert(ret == Ok);
+    assert_ok(ret);
 }
 
 void pop_print(const SpringPipeline *pipeline)
@@ -53,16 +78,15 @@ void pop_print(const SpringPipeline *pipeline)
     {
         SpringErrno ret;
 
-        SpringRow row;
-        ret = spring_pop(pipeline, "q_sink_trade", &row);
-        assert(ret == Ok);
+        SpringRow *row = spring_pop(pipeline, "q_sink_trade");
+        assert_not_null(row);
 
         int r = spring_column_text(&row, 0, (char *)ts, ts_len);
         assert(r == strlen(ts));
 
         int amount;
         ret = spring_column_int(&row, 1, &amount);
-        assert(ret == Ok);
+        assert_ok(ret);
 
         printf("[row#%d] ts=%s amount=%d\n", i, ts, amount);
 
@@ -74,17 +98,16 @@ int main()
 {
     SpringErrno ret;
 
-    SpringPipeline pipeline;
-    ret = spring_open(&pipeline);
-    assert(ret == Ok);
+    SpringPipeline *pipeline = spring_open();
+    assert_not_null(pipeline);
 
-    setup_pipeline(&pipeline);
+    setup_pipeline(pipeline);
 
-    pop_print(&pipeline);
+    pop_print(pipeline);
 
     // Close the pipeline
-    ret = spring_close(&pipeline);
-    assert(ret == Ok);
+    ret = spring_close(pipeline);
+    assert_ok(ret);
 
     return 0;
 }

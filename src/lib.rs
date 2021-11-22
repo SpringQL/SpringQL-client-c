@@ -6,6 +6,7 @@ use std::{
     mem,
     os::raw::{c_char, c_int},
     panic::{catch_unwind, UnwindSafe},
+    ptr,
 };
 
 use ::springql_core::error::SpringError;
@@ -22,24 +23,28 @@ pub(crate) mod cstr;
 
 #[non_exhaustive]
 #[repr(transparent)]
-pub struct SpringPipeline(*const c_void);
+pub struct SpringPipeline(*mut c_void);
 
 #[non_exhaustive]
 #[repr(transparent)]
-pub struct SpringRow(*const c_void);
+pub struct SpringRow(*mut c_void);
 
 /// See: springql_core::api::spring_open
 ///
 /// # Returns
 ///
-/// - `0`: if there are no recent errors.
-/// - `< 0`: SpringErrno
+/// - non-NULL: on success
+/// - NULL: on failure. Check spring_last_err() for details.
 #[no_mangle]
-pub extern "C" fn spring_open(mut pipeline: *mut SpringPipeline) -> SpringErrno {
-    with_catch(springql_core::spring_open).map_or_else(identity, |p| {
-        pipeline = Box::into_raw(Box::new(SpringPipeline(unsafe { mem::transmute(&p) })));
-        SpringErrno::Ok
-    })
+pub extern "C" fn spring_open() -> *mut SpringPipeline {
+    with_catch(springql_core::spring_open).map_or_else(
+        |_| ptr::null_mut(),
+        |pipeline| {
+            Box::into_raw(Box::new(SpringPipeline(unsafe {
+                mem::transmute(Box::new(pipeline))
+            })))
+        },
+    )
 }
 
 /// # Returns
@@ -55,7 +60,10 @@ pub unsafe extern "C" fn spring_close(pipeline: *mut SpringPipeline) -> SpringEr
     if pipeline.is_null() {
         SpringErrno::CNull
     } else {
-        drop(Box::from_raw(pipeline));
+        let outer = Box::from_raw(pipeline);
+        let inner = Box::from_raw(outer.0);
+        drop(inner);
+        drop(outer);
         SpringErrno::Ok
     }
 }
@@ -86,8 +94,8 @@ pub unsafe extern "C" fn spring_command(
 ///
 /// # Returns
 ///
-/// - `0`: if there are no recent errors.
-/// - `< 0`: SpringErrno
+/// - non-NULL: on success
+/// - NULL: on failure. Check spring_last_err() for details.
 ///
 /// # Safety
 ///
@@ -96,15 +104,18 @@ pub unsafe extern "C" fn spring_command(
 pub unsafe extern "C" fn spring_pop(
     pipeline: *const SpringPipeline,
     queue: *const c_char,
-    mut row: *mut SpringRow,
-) -> SpringErrno {
+) -> *mut SpringRow {
     let pipeline = &*((*pipeline).0 as *const springql_core::SpringPipeline);
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
 
-    with_catch(|| springql_core::spring_pop(pipeline, &queue)).map_or_else(identity, |r| {
-        row = Box::into_raw(Box::new(SpringRow(mem::transmute(&r))));
-        SpringErrno::Ok
-    })
+    with_catch(|| springql_core::spring_pop(pipeline, &queue)).map_or_else(
+        |_| ptr::null_mut(),
+        |row| {
+            Box::into_raw(Box::new(SpringRow(unsafe {
+                mem::transmute(Box::new(row))
+            })))
+        },
+    )
 }
 
 /// # Returns
@@ -120,7 +131,10 @@ pub unsafe extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
     if row.is_null() {
         SpringErrno::CNull
     } else {
-        drop(Box::from_raw(row));
+        let outer = Box::from_raw(row);
+        let inner = Box::from_raw(outer.0);
+        drop(inner);
+        drop(outer);
         SpringErrno::Ok
     }
 }
