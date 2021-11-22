@@ -37,8 +37,25 @@ typedef SpringPipeline SpringPipeline;
 
 /**
  * See: springql_core::api::spring_open
+ *
+ * # Returns
+ *
+ * - `0`: if there are no recent errors.
+ * - `< 0`: SpringErrno
  */
 enum SpringErrno spring_open(SpringPipeline *pipeline);
+
+/**
+ * # Returns
+ *
+ * - `0`: if there are no recent errors.
+ * - `< 0`: SpringErrno
+ *
+ * # Safety
+ *
+ * This function is unsafe because it cast `*mut pipeline` into `&mut`.
+ */
+enum SpringErrno spring_close(SpringPipeline *pipeline);
 
 /**
  * Write the most recent error message into a caller-provided buffer as a UTF-8
