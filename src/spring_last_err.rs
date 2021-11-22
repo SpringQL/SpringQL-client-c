@@ -12,10 +12,10 @@ use springql_core::error::SpringError;
 use crate::{cstr::strcpy, spring_errno::SpringErrno};
 
 thread_local! {
-    static LAST_ERROR: RefCell<Option<Box<dyn Error>>> = RefCell::new(None);
+    static LAST_ERROR: RefCell<Option<LastError>> = RefCell::new(None);
 }
 
-fn take_last_error() -> Option<Box<dyn Error>> {
+fn take_last_error() -> Option<LastError> {
     LAST_ERROR.with(|prev| prev.borrow_mut().take())
 }
 
@@ -66,11 +66,11 @@ pub(super) fn update_last_error(err: LastError) {
     }
 
     LAST_ERROR.with(|prev| {
-        *prev.borrow_mut() = Some(Box::new(err));
+        *prev.borrow_mut() = Some(err);
     });
 }
 
-/// Write the most recent error message into a caller-provided buffer as a UTF-8
+/// Write the most recent error number into `errno` and message into a caller-provided buffer as a UTF-8
 /// string, returning the number of bytes written.
 ///
 /// # Note
@@ -92,20 +92,28 @@ pub(super) fn update_last_error(err: LastError) {
 ///
 /// This function is unsafe because it writes into a caller-provided buffer.
 #[no_mangle]
-pub unsafe extern "C" fn spring_last_errmsg(buffer: *mut c_char, length: c_int) -> c_int {
-    if buffer.is_null() {
-        warn!("Null pointer passed into spring_last_errmsg() as the buffer");
+pub unsafe extern "C" fn spring_last_err(
+    errno: *mut SpringErrno,
+    errmsg: *mut c_char,
+    errmsg_len: c_int,
+) -> c_int {
+    if errmsg.is_null() {
+        warn!("Null pointer passed into spring_last_err() as the buffer");
         return SpringErrno::CNull as c_int;
     }
 
     let last_error = match take_last_error() {
         Some(err) => err,
-        None => return SpringErrno::Ok as c_int,
+        None => {
+            *errno = SpringErrno::Ok;
+            return SpringErrno::Ok as c_int;
+        }
     };
 
+    *errno = SpringErrno::from(&last_error);
     let error_message = last_error.to_string();
 
-    strcpy(&error_message, buffer, length)
+    strcpy(&error_message, errmsg, errmsg_len)
 }
 
 /// Calculate the number of bytes in the last error's error message **not**
@@ -116,7 +124,7 @@ pub unsafe extern "C" fn spring_last_errmsg(buffer: *mut c_char, length: c_int) 
 /// - `0`: if there are no recent errors.
 /// - `> 0`: the length of the recent error message.
 #[no_mangle]
-pub extern "C" fn spring_last_errlen() -> c_int {
+pub extern "C" fn spring_last_errmsg_len() -> c_int {
     LAST_ERROR.with(|prev| match *prev.borrow() {
         Some(ref err) => err.to_string().len() as c_int + 1,
         None => 0,

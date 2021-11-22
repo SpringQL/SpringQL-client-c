@@ -1,5 +1,7 @@
 use springql_core::error::SpringError;
 
+use crate::spring_last_err::LastError;
+
 /// Errno (error number) to be returned erroneous functions.
 ///
 /// See springql_core::api::error::SpringError for details of each error reason.
@@ -39,6 +41,15 @@ impl From<&SpringError> for SpringErrno {
             SpringError::InvalidFormat { .. } => SpringErrno::InvalidFormat,
             SpringError::Unavailable { .. } => SpringErrno::Unavailable,
             SpringError::Sql(_) => SpringErrno::Sql,
+        }
+    }
+}
+
+impl From<&LastError> for SpringErrno {
+    fn from(e: &LastError) -> Self {
+        match e {
+            LastError::SpringErr(e) => e.into(),
+            LastError::UnwindErr(_) => SpringErrno::Unknown,
         }
     }
 }
