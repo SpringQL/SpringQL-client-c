@@ -35,7 +35,7 @@ typedef enum SpringErrno {
 
 typedef const void *SpringPipeline;
 
-typedef SpringRow SpringRow;
+typedef const void *SpringRow;
 
 /**
  * See: springql_core::api::spring_open

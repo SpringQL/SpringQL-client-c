@@ -26,7 +26,7 @@ pub struct SpringPipeline(*const c_void);
 
 #[non_exhaustive]
 #[repr(transparent)]
-pub struct SpringRow(springql_core::SpringRow);
+pub struct SpringRow(*const c_void);
 
 /// See: springql_core::api::spring_open
 ///
@@ -102,7 +102,7 @@ pub unsafe extern "C" fn spring_pop(
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
 
     with_catch(|| springql_core::spring_pop(pipeline, &queue)).map_or_else(identity, |r| {
-        row = Box::into_raw(Box::new(SpringRow(r)));
+        row = Box::into_raw(Box::new(SpringRow(mem::transmute(&r))));
         SpringErrno::Ok
     })
 }
@@ -141,10 +141,10 @@ pub unsafe extern "C" fn spring_column_int(
     i_col: u16,
     out: *mut c_int,
 ) -> SpringErrno {
-    let row = &*row;
+    let row = &*((*row).0 as *const springql_core::SpringRow);
     let i_col = i_col as usize;
 
-    with_catch(|| springql_core::spring_column_i32(&row.0, i_col)).map_or_else(identity, |r| {
+    with_catch(|| springql_core::spring_column_i32(row, i_col)).map_or_else(identity, |r| {
         *out = r;
         SpringErrno::Ok
     })
@@ -170,10 +170,10 @@ pub unsafe extern "C" fn spring_column_text(
     out: *mut c_char,
     out_len: c_int,
 ) -> c_int {
-    let row = &*row;
+    let row = &*((*row).0 as *const springql_core::SpringRow);
     let i_col = i_col as usize;
 
-    with_catch(|| springql_core::spring_column_text(&row.0, i_col))
+    with_catch(|| springql_core::spring_column_text(row, i_col))
         .map_or_else(|errno| errno as c_int, |text| strcpy(&text, out, out_len))
 }
 
