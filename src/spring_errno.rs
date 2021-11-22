@@ -27,8 +27,8 @@ pub enum SpringErrno {
     CNull = -127,
 }
 
-impl From<SpringError> for SpringErrno {
-    fn from(e: SpringError) -> Self {
+impl From<&SpringError> for SpringErrno {
+    fn from(e: &SpringError) -> Self {
         match e {
             SpringError::ForeignIo { .. } => SpringErrno::ForeignIo,
             SpringError::ForeignSourceTimeout { .. } => SpringErrno::ForeignSourceTimeout,

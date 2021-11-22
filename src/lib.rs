@@ -1,5 +1,6 @@
 //! C-API
 
+use spring_last_errmsg::update_last_error;
 use springql_core::low_level_rs as springql_core;
 
 use spring_errno::SpringErrno;
@@ -19,5 +20,5 @@ pub extern "C" fn spring_open(pipeline: *mut SpringPipeline) -> SpringErrno {
             *pipeline = SpringPipeline(p);
             SpringErrno::Ok
         })
-        .unwrap_or_else(|e| e.into())
+        .unwrap_or_else(update_last_error)
 }

@@ -5,7 +5,8 @@ use std::{
     ptr, slice,
 };
 
-use log::warn;
+use log::{error, warn};
+use springql_core::error::SpringError;
 
 use crate::spring_errno::SpringErrno;
 
@@ -15,6 +16,29 @@ thread_local! {
 
 fn take_last_error() -> Option<Box<dyn Error>> {
     LAST_ERROR.with(|prev| prev.borrow_mut().take())
+}
+
+/// Update the most recent error, clearing whatever may have been there before.
+pub(super) fn update_last_error(err: SpringError) -> SpringErrno {
+    error!("Setting LAST_ERROR: {}", err);
+
+    {
+        // Print a pseudo-backtrace for this error, following back each error's
+        // cause until we reach the root error.
+        let mut source = err.source();
+        while let Some(parent_err) = source {
+            warn!("Caused by: {}", parent_err);
+            source = parent_err.source();
+        }
+    }
+
+    let errno = SpringErrno::from(&err);
+
+    LAST_ERROR.with(|prev| {
+        *prev.borrow_mut() = Some(Box::new(err));
+    });
+
+    errno
 }
 
 /// Write the most recent error message into a caller-provided buffer as a UTF-8
@@ -34,9 +58,9 @@ fn take_last_error() -> Option<Box<dyn Error>> {
 /// - `0`: if there are no recent errors.
 /// - `> 0`: the length of the recent error message.
 /// - `< 0`: SpringErrno
-/// 
+///
 /// # Safety
-/// 
+///
 /// This function is unsafe because it writes into a caller-provided buffer.
 #[no_mangle]
 pub unsafe extern "C" fn spring_last_errmsg(buffer: *mut c_char, length: c_int) -> c_int {
@@ -79,7 +103,7 @@ pub unsafe extern "C" fn spring_last_errmsg(buffer: *mut c_char, length: c_int) 
 
 /// Calculate the number of bytes in the last error's error message **not**
 /// including any trailing `null` characters.
-/// 
+///
 /// # Returns
 ///
 /// - `0`: if there are no recent errors.
