@@ -55,7 +55,7 @@ enum SpringErrno spring_open(SpringPipeline *pipeline);
  *
  * # Safety
  *
- * This function is unsafe because it cast `*mut pipeline` into `&mut`.
+ * This function is unsafe because it uses raw pointer.
  */
 enum SpringErrno spring_close(SpringPipeline *pipeline);
 
@@ -69,7 +69,7 @@ enum SpringErrno spring_close(SpringPipeline *pipeline);
  *
  * # Safety
  *
- * This function is unsafe because it cast `*mut pipeline` into `&`.
+ * This function is unsafe because it uses raw pointer.
  */
 enum SpringErrno spring_command(const SpringPipeline *pipeline, const char *sql);
 
@@ -83,7 +83,7 @@ enum SpringErrno spring_command(const SpringPipeline *pipeline, const char *sql)
  *
  * # Safety
  *
- * This function is unsafe because it cast `*mut pipeline` into `&`.
+ * This function is unsafe because it uses raw pointer.
  */
 enum SpringErrno spring_pop(const SpringPipeline *pipeline, const char *queue, SpringRow *row);
 
@@ -95,7 +95,7 @@ enum SpringErrno spring_pop(const SpringPipeline *pipeline, const char *queue, S
  *
  * # Safety
  *
- * This function is unsafe because it cast `*mut row` into `&mut`.
+ * This function is unsafe because it uses raw pointer.
  */
 enum SpringErrno spring_row_close(SpringRow *row);
 
@@ -109,7 +109,7 @@ enum SpringErrno spring_row_close(SpringRow *row);
  *
  * # Safety
  *
- * This function is unsafe because it cast `*mut pipeline` into `&`.
+ * This function is unsafe because it uses raw pointer.
  */
 enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *out);
 
@@ -126,7 +126,7 @@ enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *ou
  *
  * # Safety
  *
- * This function is unsafe because it cast `*mut pipeline` into `&`.
+ * This function is unsafe because it uses raw pointer.
  */
 int spring_column_text(const SpringRow *row, uint16_t i_col, char *out, int out_len);
 

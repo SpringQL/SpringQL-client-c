@@ -48,7 +48,7 @@ pub extern "C" fn spring_open(mut pipeline: *mut SpringPipeline) -> SpringErrno 
 ///
 /// # Safety
 ///
-/// This function is unsafe because it cast `*mut pipeline` into `&mut`.
+/// This function is unsafe because it uses raw pointer.
 #[no_mangle]
 pub unsafe extern "C" fn spring_close(pipeline: *mut SpringPipeline) -> SpringErrno {
     if pipeline.is_null() {
@@ -68,7 +68,7 @@ pub unsafe extern "C" fn spring_close(pipeline: *mut SpringPipeline) -> SpringEr
 ///
 /// # Safety
 ///
-/// This function is unsafe because it cast `*mut pipeline` into `&`.
+/// This function is unsafe because it uses raw pointer.
 #[no_mangle]
 pub unsafe extern "C" fn spring_command(
     pipeline: *const SpringPipeline,
@@ -90,7 +90,7 @@ pub unsafe extern "C" fn spring_command(
 ///
 /// # Safety
 ///
-/// This function is unsafe because it cast `*mut pipeline` into `&`.
+/// This function is unsafe because it uses raw pointer.
 #[no_mangle]
 pub unsafe extern "C" fn spring_pop(
     pipeline: *const SpringPipeline,
@@ -113,7 +113,7 @@ pub unsafe extern "C" fn spring_pop(
 ///
 /// # Safety
 ///
-/// This function is unsafe because it cast `*mut row` into `&mut`.
+/// This function is unsafe because it uses raw pointer.
 #[no_mangle]
 pub unsafe extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
     if row.is_null() {
@@ -133,7 +133,7 @@ pub unsafe extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
 ///
 /// # Safety
 ///
-/// This function is unsafe because it cast `*mut pipeline` into `&`.
+/// This function is unsafe because it uses raw pointer.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_int(
     row: *const SpringRow,
@@ -161,7 +161,7 @@ pub unsafe extern "C" fn spring_column_int(
 ///
 /// # Safety
 ///
-/// This function is unsafe because it cast `*mut pipeline` into `&`.
+/// This function is unsafe because it uses raw pointer.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_text(
     row: *const SpringRow,
