@@ -35,6 +35,8 @@ typedef enum SpringErrno {
 
 typedef SpringPipeline SpringPipeline;
 
+typedef SpringRow SpringRow;
+
 /**
  * See: springql_core::api::spring_open
  *
@@ -70,6 +72,20 @@ enum SpringErrno spring_close(SpringPipeline *pipeline);
  * This function is unsafe because it cast `*mut pipeline` into `&`.
  */
 enum SpringErrno spring_command(SpringPipeline *pipeline, const char *sql);
+
+/**
+ * See: springql_core::api::spring_pop
+ *
+ * # Returns
+ *
+ * - `0`: if there are no recent errors.
+ * - `< 0`: SpringErrno
+ *
+ * # Safety
+ *
+ * This function is unsafe because it cast `*mut pipeline` into `&`.
+ */
+enum SpringErrno spring_pop(SpringPipeline *pipeline, const char *queue, SpringRow *row);
 
 /**
  * Write the most recent error message into a caller-provided buffer as a UTF-8

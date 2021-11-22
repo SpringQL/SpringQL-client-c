@@ -20,6 +20,10 @@ pub mod spring_last_errmsg;
 #[repr(transparent)]
 pub struct SpringPipeline(springql_core::SpringPipeline);
 
+#[non_exhaustive]
+#[repr(transparent)]
+pub struct SpringRow(springql_core::SpringRow);
+
 /// See: springql_core::api::spring_open
 ///
 /// # Returns
@@ -72,6 +76,31 @@ pub unsafe extern "C" fn spring_command(
 
     with_catch(|| springql_core::spring_command(&pipeline.0, &sql))
         .map_or_else(identity, |()| SpringErrno::Ok)
+}
+
+/// See: springql_core::api::spring_pop
+///
+/// # Returns
+///
+/// - `0`: if there are no recent errors.
+/// - `< 0`: SpringErrno
+///
+/// # Safety
+///
+/// This function is unsafe because it cast `*mut pipeline` into `&`.
+#[no_mangle]
+pub unsafe extern "C" fn spring_pop(
+    pipeline: *mut SpringPipeline,
+    queue: *const c_char,
+    mut row: *mut SpringRow,
+) -> SpringErrno {
+    let pipeline = &*pipeline;
+    let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
+
+    with_catch(|| springql_core::spring_pop(&pipeline.0, &queue)).map_or_else(identity, |r| {
+        row = Box::into_raw(Box::new(SpringRow(r)));
+        SpringErrno::Ok
+    })
 }
 
 fn with_catch<F, R>(f: F) -> Result<R, SpringErrno>
