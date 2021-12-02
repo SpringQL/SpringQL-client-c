@@ -1,8 +1,9 @@
 [package]
-authors = ["Sho Nakatani <lay.sakura@gmail.com>"]
-license = "TBD"
 name = "springql-client-c"
 version = "0.1.0"
+
+authors = ["Sho Nakatani <lay.sakura@gmail.com>"]
+license = "MIT OR Apache-2.0"
 
 edition = "2021"
 
@@ -14,6 +15,7 @@ name = "springql_client"
 cbindgen = "0.20"
 
 [dependencies]
+# springql-core = {git = "https://gh01.base.toyota-tokyo.tech/SpringQL/SpringQL"}
 springql-core = {path = "../SpringQL/SpringQL-core"}
 
 log = "0.4"
