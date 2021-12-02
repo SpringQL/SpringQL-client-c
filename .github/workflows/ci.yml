@@ -30,6 +30,8 @@ jobs:
             task: lint
           - name: test
             task: build test
+          - name: example-run
+            task: example-run
           - name: doc
             task: doc
           - name: deadlink

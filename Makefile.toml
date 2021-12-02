@@ -28,6 +28,25 @@ script = ['''
 RUSTFLAGS='-D warnings' cargo test --workspace --all-targets --all-features
 ''']
 
+[tasks.example-build]
+dependencies = ["build"]
+script = ['''
+#!/usr/bin/env bash -eux
+cd c_example
+cmake .
+make
+''']
+
+[tasks.example-run]
+dependencies = ["example-build"]
+script = ['''
+#!/usr/bin/env bash -eux
+cd c_example
+(python print_trade.py | nc -l 19876) &
+sleep 1
+./run_example
+''']
+
 [tasks.doc]
 script = ['''
 #!/usr/bin/env bash -eux
