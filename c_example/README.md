@@ -44,3 +44,13 @@ Finally the example app runs.
 [row#3] ts=2021-11-23 05:38:32.590295000 amount=500
 [row#4] ts=2021-11-23 05:38:32.590305000 amount=100
 ```
+
+## License
+
+Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT) at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in SpringQL by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
+
+Copyright (c) 2021 TOYOTA MOTOR CORPORATION.
