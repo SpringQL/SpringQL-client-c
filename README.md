@@ -25,6 +25,14 @@ All you need to do are:
 
 See [`c_example/`](https://github.com/SpringQL/SpringQL-client-c/tree/main/c_example) for how to write and build a SpringQL embedded application.
 
+## Development
+
+```bash
+cargo build
+```
+
+to generate `springql.h`.
+
 ## License
 
 Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT) at your option.

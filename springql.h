@@ -35,9 +35,21 @@ typedef enum SpringErrno {
   CNull = -127,
 } SpringErrno;
 
+typedef SpringConfig SpringConfig;
+
 typedef void *SpringPipeline;
 
 typedef void *SpringRow;
+
+/**
+ * See: springql_core::api::spring_config_default
+ *
+ * # Returns
+ *
+ * - `0`: if there are no recent errors.
+ * - `< 0`: SpringErrno
+ */
+SpringConfig spring_config_default(void);
 
 /**
  * See: springql_core::api::spring_open
@@ -47,7 +59,7 @@ typedef void *SpringRow;
  * - non-NULL: on success
  * - NULL: on failure. Check spring_last_err() for details.
  */
-SpringPipeline *spring_open(void);
+SpringPipeline *spring_open(SpringConfig config);
 
 /**
  * # Returns

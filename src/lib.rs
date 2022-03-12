@@ -25,11 +25,34 @@ pub(crate) mod cstr;
 
 #[non_exhaustive]
 #[repr(transparent)]
+pub struct SpringConfig(springql_core::SpringConfig);
+
+
+#[non_exhaustive]
+#[repr(transparent)]
 pub struct SpringPipeline(*mut c_void);
 
 #[non_exhaustive]
 #[repr(transparent)]
 pub struct SpringRow(*mut c_void);
+
+/// See: springql_core::api::spring_config_default
+///
+/// # Returns
+///
+/// - `0`: if there are no recent errors.
+/// - `< 0`: SpringErrno
+#[no_mangle]
+pub extern "C" fn spring_config_default() -> SpringConfig {
+    with_catch(|| springql_core::spring_open(config.0)).map_or_else(
+        |_| ptr::null_mut(),
+        |pipeline| {
+            Box::into_raw(Box::new(SpringPipeline(unsafe {
+                mem::transmute(Box::new(pipeline))
+            })))
+        },
+    )
+}
 
 /// See: springql_core::api::spring_open
 ///
@@ -38,8 +61,8 @@ pub struct SpringRow(*mut c_void);
 /// - non-NULL: on success
 /// - NULL: on failure. Check spring_last_err() for details.
 #[no_mangle]
-pub extern "C" fn spring_open() -> *mut SpringPipeline {
-    with_catch(springql_core::spring_open).map_or_else(
+pub extern "C" fn spring_open(config: SpringConfig) -> *mut SpringPipeline {
+    with_catch(|| springql_core::spring_open(config.0)).map_or_else(
         |_| ptr::null_mut(),
         |pipeline| {
             Box::into_raw(Box::new(SpringPipeline(unsafe {

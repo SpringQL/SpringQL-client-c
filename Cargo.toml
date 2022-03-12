@@ -15,6 +15,6 @@ name = "springql_client"
 cbindgen = "0.20"
 
 [dependencies]
-springql-core = {git = "https://github.com/SpringQL/SpringQL"}
+springql-core = "0.2"
 
 log = "0.4"
