@@ -81,11 +81,7 @@ pub unsafe extern "C" fn spring_open(config: *const SpringConfig) -> *mut Spring
 
     with_catch(|| springql_core::spring_open(config)).map_or_else(
         |_| ptr::null_mut(),
-        |pipeline| {
-            Box::into_raw(Box::new(SpringPipeline(unsafe {
-                mem::transmute(Box::new(pipeline))
-            })))
-        },
+        |pipeline| Box::into_raw(Box::new(SpringPipeline(mem::transmute(Box::new(pipeline))))),
     )
 }
 
@@ -152,11 +148,7 @@ pub unsafe extern "C" fn spring_pop(
 
     with_catch(|| springql_core::spring_pop(pipeline, &queue)).map_or_else(
         |_| ptr::null_mut(),
-        |row| {
-            Box::into_raw(Box::new(SpringRow(unsafe {
-                mem::transmute(Box::new(row))
-            })))
-        },
+        |row| Box::into_raw(Box::new(SpringRow(mem::transmute(Box::new(row))))),
     )
 }
 
