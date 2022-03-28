@@ -1,0 +1,76 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  job-matrix:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          components: llvm-tools-preview
+          override: true
+
+      - name: Set os outputs
+        id: set-os
+        run: |
+          if [[ ${{ matrix.os }} == "macos-latest" ]]; then
+            echo "::set-output name=os::macos"
+          elif [[ ${{ matrix.os }} == "ubuntu-latest" ]]; then
+            echo "::set-output name=os::linux"
+          else
+            echo "Unknown OS: ${{ matrix.os }}"
+            exit 1
+          fi
+
+      - name: debug build
+        run: |
+          cargo build
+      - name: create debug artifact
+        run: |
+          d=springql_client-${{ steps.set-os.outputs.os }}-debug
+          mkdir ${d}
+
+          cp springql.h ${d}/
+          mv target/debug/libspringql_client.{so,dylib} ${d}/ || :
+
+          zip -r ${d}.zip ${d}
+
+      - name: release build
+        run: |
+          cargo build --release
+      - name: create release artifact
+        run: |
+          d=springql_client-${{ steps.set-os.outputs.os }}-release
+          mkdir ${d}
+
+          cp springql.h ${d}/
+          mv target/release/libspringql_client.{so,dylib} ${d}/ || :
+
+          zip -r ${d}.zip ${d}
+
+      - name: Upload Files to a GitHub Release (${{ steps.set-os.outputs.os }})
+        uses: svenstaro/upload-release-action@2.2.1
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file_glob: true
+          file: springql_client-${{ steps.set-os.outputs.os }}-*.zip
+          tag: ${{ github.ref }}
+          overwrite: true
+          prerelease: false
