@@ -53,4 +53,4 @@ Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in SpringQL by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
 
-Copyright (c) 2021 TOYOTA MOTOR CORPORATION.
+Copyright (c) 2022 TOYOTA MOTOR CORPORATION.
