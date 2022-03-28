@@ -40,10 +40,6 @@ void setup_pipeline(const SpringPipeline *pipeline)
         "  ts TIMESTAMP NOT NULL ROWTIME,"
         "  ticker TEXT NOT NULL,"
         "  amount INTEGER NOT NULL"
-        ") SERVER NET_SERVER OPTIONS ("
-        "  PROTOCOL 'TCP',"
-        "  REMOTE_HOST '127.0.0.1',"
-        "  REMOTE_PORT '19876'"
         ");");
     assert_ok(ret);
 
@@ -51,10 +47,7 @@ void setup_pipeline(const SpringPipeline *pipeline)
         pipeline,
         "CREATE SINK STREAM sink_trade ("
         "  ts TIMESTAMP NOT NULL,"
-        "  ticker TEXT NOT NULL,"
         "  amount INTEGER NOT NULL"
-        ") SERVER IN_MEMORY_QUEUE OPTIONS ("
-        "  NAME 'q_sink_trade'"
         ");");
     assert_ok(ret);
 
@@ -62,12 +55,25 @@ void setup_pipeline(const SpringPipeline *pipeline)
         pipeline,
         "CREATE PUMP pu_projection AS"
         "  INSERT INTO sink_trade (ts, amount)"
-        "  SELECT STREAM ts, amount FROM source_trade;");
+        "  SELECT STREAM source_trade.ts, source_trade.amount FROM source_trade;");
     assert_ok(ret);
 
     ret = spring_command(
         pipeline,
-        "ALTER PUMP pu_projection START;");
+        "CREATE SINK WRITER in_mem_queue_sink_trade FOR sink_trade"
+        "  TYPE IN_MEMORY_QUEUE OPTIONS ("
+        "    NAME 'q_sink_trade'"
+        "  );");
+    assert_ok(ret);
+
+    ret = spring_command(
+        pipeline,
+        "CREATE SOURCE READER tcp_source_trade FOR source_trade"
+        "  TYPE NET_CLIENT OPTIONS ("
+        "    PROTOCOL 'TCP',"
+        "    REMOTE_HOST '127.0.0.1',"
+        "    REMOTE_PORT '19876'"
+        "  );");
     assert_ok(ret);
 }
 
@@ -100,7 +106,10 @@ int main()
 {
     SpringErrno ret;
 
-    SpringPipeline *pipeline = spring_open();
+    SpringConfig *config = spring_config_default();
+    assert_not_null(config);
+
+    SpringPipeline *pipeline = spring_open(config);
     assert_not_null(pipeline);
 
     setup_pipeline(pipeline);
@@ -108,6 +117,9 @@ int main()
     pop_print(pipeline);
 
     ret = spring_close(pipeline);
+    assert_ok(ret);
+
+    ret = spring_config_close(config);
     assert_ok(ret);
 
     return 0;
