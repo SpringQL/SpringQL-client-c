@@ -23,8 +23,8 @@ jobs:
 
       - name: Install jq
         run: |
-          apt-get update
-          apt-get install -y jq
+          sudo apt-get update
+          sudo apt-get install -y jq
 
       - name: Get version from Cargo.toml
         id: crate-version
