@@ -25,11 +25,45 @@ pub(crate) mod cstr;
 
 #[non_exhaustive]
 #[repr(transparent)]
+pub struct SpringConfig(*mut c_void);
+
+#[non_exhaustive]
+#[repr(transparent)]
 pub struct SpringPipeline(*mut c_void);
 
 #[non_exhaustive]
 #[repr(transparent)]
 pub struct SpringRow(*mut c_void);
+
+/// See: springql_core::api::spring_config_default
+#[no_mangle]
+pub extern "C" fn spring_config_default() -> *mut SpringConfig {
+    let config = springql_core::spring_config_default();
+    Box::into_raw(Box::new(SpringConfig(unsafe {
+        mem::transmute(Box::new(config))
+    })))
+}
+
+/// # Returns
+///
+/// - `0`: if there are no recent errors.
+/// - `< 0`: SpringErrno
+///
+/// # Safety
+///
+/// This function is unsafe because it uses raw pointer.
+#[no_mangle]
+pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> SpringErrno {
+    if config.is_null() {
+        SpringErrno::CNull
+    } else {
+        let outer = Box::from_raw(config);
+        let inner = Box::from_raw(outer.0);
+        drop(inner);
+        drop(outer);
+        SpringErrno::Ok
+    }
+}
 
 /// See: springql_core::api::spring_open
 ///
@@ -37,15 +71,17 @@ pub struct SpringRow(*mut c_void);
 ///
 /// - non-NULL: on success
 /// - NULL: on failure. Check spring_last_err() for details.
+///
+/// # Safety
+///
+/// This function is unsafe because it uses raw pointer.
 #[no_mangle]
-pub extern "C" fn spring_open() -> *mut SpringPipeline {
-    with_catch(springql_core::spring_open).map_or_else(
+pub unsafe extern "C" fn spring_open(config: *const SpringConfig) -> *mut SpringPipeline {
+    let config = &*((*config).0 as *const springql_core::SpringConfig);
+
+    with_catch(|| springql_core::spring_open(config)).map_or_else(
         |_| ptr::null_mut(),
-        |pipeline| {
-            Box::into_raw(Box::new(SpringPipeline(unsafe {
-                mem::transmute(Box::new(pipeline))
-            })))
-        },
+        |pipeline| Box::into_raw(Box::new(SpringPipeline(mem::transmute(Box::new(pipeline))))),
     )
 }
 
@@ -112,11 +148,7 @@ pub unsafe extern "C" fn spring_pop(
 
     with_catch(|| springql_core::spring_pop(pipeline, &queue)).map_or_else(
         |_| ptr::null_mut(),
-        |row| {
-            Box::into_raw(Box::new(SpringRow(unsafe {
-                mem::transmute(Box::new(row))
-            })))
-        },
+        |row| Box::into_raw(Box::new(SpringRow(mem::transmute(Box::new(row))))),
     )
 }
 

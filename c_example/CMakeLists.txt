@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(springql-example VERSION 0.1.0)
+project(springql-example VERSION 0.3.0)
 
 include_directories(..)
 link_directories(../target/debug)

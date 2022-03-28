@@ -24,6 +24,7 @@ pub enum SpringErrno {
     InvalidFormat = -8,
     Unavailable = -9,
     Sql = -10,
+    InvalidConfig = -11,
 
     /// Insufficient buffer size
     CInsufficient = -126,
@@ -43,6 +44,7 @@ impl From<&SpringError> for SpringErrno {
             SpringError::InvalidFormat { .. } => SpringErrno::InvalidFormat,
             SpringError::Unavailable { .. } => SpringErrno::Unavailable,
             SpringError::Sql(_) => SpringErrno::Sql,
+            SpringError::InvalidConfig { .. } => SpringErrno::InvalidConfig,
         }
     }
 }
