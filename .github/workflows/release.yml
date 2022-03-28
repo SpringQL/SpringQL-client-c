@@ -69,8 +69,8 @@ jobs:
         uses: svenstaro/upload-release-action@2.2.1
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: springql_client-${{ steps.set-os.outputs.os }}-release.zip
-          asset_name: springql_client-${{ steps.set-os.outputs.os }}-release.zip
+          file_glob: true
+          file: springql_client-${{ steps.set-os.outputs.os }}-*.zip
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: false
