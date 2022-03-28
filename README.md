@@ -31,7 +31,7 @@ See [`c_example/`](https://github.com/SpringQL/SpringQL-client-c/tree/main/c_exa
 cargo build
 ```
 
-to generate `springql.h`.
+to generate `springql.h` and `target/debug/libspringql_client.{so,dylib}`.
 
 ## License
 
