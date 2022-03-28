@@ -27,11 +27,17 @@ See [`c_example/`](https://github.com/SpringQL/SpringQL-client-c/tree/main/c_exa
 
 ## Development
 
+### Build
+
 ```bash
 cargo build
 ```
 
 to generate `springql.h` and `target/debug/libspringql_client.{so,dylib}`.
+
+### Deployment
+
+Create & push git tag named `v*` to release the header file and shared libraries to GitHub Releases.
 
 ## License
 
