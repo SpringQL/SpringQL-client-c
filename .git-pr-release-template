@@ -1,0 +1,4 @@
+<%= ENV['CRATE_VERSION'] || '(no version provided from $CRATE_VERSION env var)' %>
+<% pull_requests.each do |pr| -%>
+<%=  pr.to_checklist_item %>
+<% end -%>
