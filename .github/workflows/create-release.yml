@@ -16,8 +16,6 @@ on:
 jobs:
   create-release-pr:
     runs-on: ubuntu-latest
-    outputs:
-      crate-version: ${{ steps.crate-version.outputs.version }}
     steps:
       - uses: actions/checkout@v2
 
@@ -29,7 +27,9 @@ jobs:
       - name: Get version from Cargo.toml
         id: crate-version
         run: |
-          echo "::set-output name=version::v$(cargo metadata --format-version=1 |jq '.packages[] | select(.name == "springql-client-c")' |jq -r '.version')"
+          crate_version="$(cargo metadata --format-version=1 |jq '.packages[] | select(.name == "springql-client-c")' |jq -r '.version')"
+          echo "crate version: $crate_version"
+          echo "::set-output name=version::v${crate_version}"
 
       - name: Create a release pull request
         uses: bakunyo/git-pr-release-action@master
