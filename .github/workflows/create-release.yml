@@ -3,15 +3,9 @@ name: create-release
 on:
   pull_request:
     types:
-      - opened
-      - synchronize
-
-# on:
-#   pull_request:
-#     types:
-#       - closed
-#     branches:
-#       - main
+      - closed
+    branches:
+      - main
 
 jobs:
   create-release-pr:
