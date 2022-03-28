@@ -25,6 +25,7 @@ typedef enum SpringErrno {
   InvalidFormat = -8,
   Unavailable = -9,
   Sql = -10,
+  InvalidConfig = -11,
   /**
    * Insufficient buffer size
    */
@@ -35,7 +36,7 @@ typedef enum SpringErrno {
   CNull = -127,
 } SpringErrno;
 
-typedef SpringConfig SpringConfig;
+typedef void *SpringConfig;
 
 typedef void *SpringPipeline;
 
@@ -43,13 +44,20 @@ typedef void *SpringRow;
 
 /**
  * See: springql_core::api::spring_config_default
- *
+ */
+SpringConfig *spring_config_default(void);
+
+/**
  * # Returns
  *
  * - `0`: if there are no recent errors.
  * - `< 0`: SpringErrno
+ *
+ * # Safety
+ *
+ * This function is unsafe because it uses raw pointer.
  */
-SpringConfig spring_config_default(void);
+enum SpringErrno spring_config_close(SpringConfig *config);
 
 /**
  * See: springql_core::api::spring_open
@@ -58,8 +66,12 @@ SpringConfig spring_config_default(void);
  *
  * - non-NULL: on success
  * - NULL: on failure. Check spring_last_err() for details.
+ *
+ * # Safety
+ *
+ * This function is unsafe because it uses raw pointer.
  */
-SpringPipeline *spring_open(SpringConfig config);
+SpringPipeline *spring_open(const SpringConfig *config);
 
 /**
  * # Returns
