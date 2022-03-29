@@ -38,7 +38,7 @@ impl Error for LastError {
 impl Display for LastError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            LastError::SpringErr(e) => format!("{}", e),
+            LastError::SpringErr(e) => format!("{:?}", e),
             LastError::UnwindErr(any) => {
                 if let Some(s) = any.downcast_ref::<String>() {
                     s.clone()
