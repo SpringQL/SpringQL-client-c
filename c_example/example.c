@@ -106,7 +106,9 @@ int main()
 {
     SpringErrno ret;
 
-    SpringConfig *config = spring_config_default();
+    SpringConfig *config = spring_config_toml(
+        "[memory]\n"
+        "upper_limit_bytes = 1_000_000\n");
     assert_not_null(config);
 
     SpringPipeline *pipeline = spring_open(config);
