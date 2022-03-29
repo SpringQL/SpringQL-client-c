@@ -25,6 +25,14 @@ All you need to do are:
 
 See [`c_example/`](https://github.com/SpringQL/SpringQL-client-c/tree/main/c_example) for how to write and build a SpringQL embedded application.
 
+## Versioning
+
+[Semantic versioning](https://semver.org/) in `<major>.<minor>.<patch>(\+<build>)?` format.
+
+`<major>.<minor>.<patch>` is exactly the same as the version of `springql-core` crate.
+
+`<build>` is an incremental number. `N`th build (`N > 1`) for the `springql-core vX.Y.Z` is `vX.Y.Z+N`, for example.
+
 ## Development
 
 ### Build
