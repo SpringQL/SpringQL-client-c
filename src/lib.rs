@@ -36,12 +36,34 @@ pub struct SpringPipeline(*mut c_void);
 pub struct SpringRow(*mut c_void);
 
 /// See: springql_core::api::spring_config_default
+///
+/// Returned value is not modifiable (it is just a void pointer).
+/// If you would like to change the default configuration, use `spring_config_toml()` instead.
 #[no_mangle]
 pub extern "C" fn spring_config_default() -> *mut SpringConfig {
     let config = springql_core::spring_config_default();
     Box::into_raw(Box::new(SpringConfig(unsafe {
         mem::transmute(Box::new(config))
     })))
+}
+
+/// See: springql_core::api::spring_config_default
+///
+/// Returned value is not modifiable (it is just a void pointer).
+/// If you would like to change the default configuration, use `spring_config_toml()` instead.
+///
+/// # Safety
+///
+/// This function is unsafe because it uses raw pointer.
+#[no_mangle]
+pub unsafe extern "C" fn spring_config_toml(
+    overwrite_config_toml: *const c_char,
+) -> *mut SpringConfig {
+    let s = { CStr::from_ptr(overwrite_config_toml) };
+    let s = s.to_str().expect("failed to parse TOML string into UTF-8");
+
+    let config = springql_core::spring_config_toml(s).expect("failed to parse TOML config");
+    Box::into_raw(Box::new(SpringConfig(mem::transmute(Box::new(config)))))
 }
 
 /// # Returns

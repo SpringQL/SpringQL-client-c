@@ -44,8 +44,23 @@ typedef void *SpringRow;
 
 /**
  * See: springql_core::api::spring_config_default
+ *
+ * Returned value is not modifiable (it is just a void pointer).
+ * If you would like to change the default configuration, use `spring_config_toml()` instead.
  */
 SpringConfig *spring_config_default(void);
+
+/**
+ * See: springql_core::api::spring_config_default
+ *
+ * Returned value is not modifiable (it is just a void pointer).
+ * If you would like to change the default configuration, use `spring_config_toml()` instead.
+ *
+ * # Safety
+ *
+ * This function is unsafe because it uses raw pointer.
+ */
+SpringConfig *spring_config_toml(const char *overwrite_config_toml);
 
 /**
  * # Returns
