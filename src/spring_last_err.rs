@@ -8,7 +8,7 @@ use std::{
     os::raw::{c_char, c_int},
 };
 
-use log::{error, warn};
+use log::{info, warn};
 use springql_core::error::SpringError;
 
 use crate::{cstr::strcpy, spring_errno::SpringErrno};
@@ -55,7 +55,7 @@ impl Display for LastError {
 
 /// Update the most recent error, clearing whatever may have been there before.
 pub(super) fn update_last_error(err: LastError) {
-    error!("Setting LAST_ERROR: {}", err);
+    info!("Setting LAST_ERROR: {}", err);
 
     {
         // Print a pseudo-backtrace for this error, following back each error's
