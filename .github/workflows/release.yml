@@ -7,17 +7,53 @@ on:
 
 jobs:
   job-matrix:
-    name: ${{ matrix.os }}
+    name: ${{ matrix.os }}; release:${{ matrix.release-build }}; ${{ matrix.cross-target }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
+        include:
+          - os: ubuntu-latest
+          - os: ubuntu-latest
+            release-build: true
+
+          - os: macos-latest
+          - os: macos-latest
+            release-build: true
+
+          - os: macos-latest
+            cross-target: aarch64-apple-darwin
+          - os: macos-latest
+            cross-target: aarch64-apple-darwin
+            release-build: true
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Set outputs
+        id: set-outputs
+        run: |
+          if [[ "${{ matrix.cross-target }}" ]]; then
+            echo "::set-output name=build-target::${{ matrix.cross-target }}"
+            echo "::set-output name=target-option::--target=${{ matrix.cross-target }}"
+          elif [[ ${{ matrix.os }} == "macos-latest" ]]; then
+            echo "::set-output name=build-target::x86_64-apple-darwin"
+            echo "::set-output name=target-option::"
+          elif [[ ${{ matrix.os }} == "ubuntu-latest" ]]; then
+            echo "::set-output name=build-target::x86_64-unknown-linux-gnu"
+            echo "::set-output name=target-option::"
+          else
+            echo "Unknown OS: ${{ matrix.os }}"
+            exit 1
+          fi
+
+          if [[ "${{ matrix.release-build }}" ]]; then
+            echo "::set-output name=release-build-option::--release"
+            echo "::set-output name=build-type::release"
+          else
+            echo "::set-output name=release-build-option::"
+            echo "::set-output name=build-type::debug"
+          fi
 
       - name: Install Rust stable
         uses: actions-rs/toolchain@v1
@@ -27,50 +63,32 @@ jobs:
           components: llvm-tools-preview
           override: true
 
-      - name: Set os outputs
-        id: set-os
+      - name: Install cross-build toolchain
+        if: ${{ matrix.cross-target }}
         run: |
-          if [[ ${{ matrix.os }} == "macos-latest" ]]; then
-            echo "::set-output name=os::macos"
-          elif [[ ${{ matrix.os }} == "ubuntu-latest" ]]; then
-            echo "::set-output name=os::linux"
-          else
-            echo "Unknown OS: ${{ matrix.os }}"
-            exit 1
-          fi
+          rustup target add ${{ matrix.cross-target }}
 
-      - name: debug build
+      - name: build
         run: |
-          cargo build
-      - name: create debug artifact
+          cargo build ${{ steps.set-outputs.outputs.release-build-option }} ${{ steps.set-outputs.outputs.target-option }}
+          
+      - name: create artifact
         run: |
-          d=springql_client-${{ steps.set-os.outputs.os }}-debug
-          mkdir ${d}
+          artifact_dir=springql_client-${{ steps.set-outputs.outputs.build-target }}-${{ steps.set-outputs.outputs.build-type }}
+          target_dir=target/${{ matrix.cross-target }}/${{ steps.set-outputs.outputs.build-type }}
 
-          cp springql.h ${d}/
-          mv target/debug/libspringql_client.{so,dylib} ${d}/ || :
+          mkdir ${artifact_dir}
 
-          zip -r ${d}.zip ${d}
+          cp springql.h ${artifact_dir}/
+          mv ${target_dir}/libspringql_client.{so,dylib} ${artifact_dir}/ || :
 
-      - name: release build
-        run: |
-          cargo build --release
-      - name: create release artifact
-        run: |
-          d=springql_client-${{ steps.set-os.outputs.os }}-release
-          mkdir ${d}
+          zip -r ${artifact_dir}.zip ${artifact_dir}
 
-          cp springql.h ${d}/
-          mv target/release/libspringql_client.{so,dylib} ${d}/ || :
-
-          zip -r ${d}.zip ${d}
-
-      - name: Upload Files to a GitHub Release (${{ steps.set-os.outputs.os }})
+      - name: Upload Files to a GitHub Release (${{ steps.set-outputs.outputs.os }})
         uses: svenstaro/upload-release-action@2.2.1
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file_glob: true
-          file: springql_client-${{ steps.set-os.outputs.os }}-*.zip
+          file: springql_client-${{ steps.set-outputs.outputs.build-target }}-${{ steps.set-outputs.outputs.build-type }}.zip
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: false
