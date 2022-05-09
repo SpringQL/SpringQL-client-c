@@ -11,22 +11,31 @@ on:
 
 jobs:
   job-matrix:
-    name: ${{ matrix.os }}; ${{ matrix.cross-target }}
+    name: ${{ matrix.os }}; release:${{ matrix.release-build }}; ${{ matrix.cross-target }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
         include:
           - os: ubuntu-latest
+          - os: ubuntu-latest
+            release-build: true
+
           - os: macos-latest
+          - os: macos-latest
+            release-build: true
+
           - os: macos-latest
             cross-target: aarch64-apple-darwin
+          - os: macos-latest
+            cross-target: aarch64-apple-darwin
+            release-build: true
 
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set build-target outputs
-        id: set-build-target
+      - name: Set outputs
+        id: set-outputs
         run: |
           if [[ "${{ matrix.cross-target }}" ]]; then
             echo "::set-output name=build-target::${{ matrix.cross-target }}"
@@ -37,6 +46,14 @@ jobs:
           else
             echo "Unknown OS: ${{ matrix.os }}"
             exit 1
+          fi
+
+          if [[ "${{ matrix.release-build }}" ]]; then
+            echo "::set-output name=release-build-option::--release"
+            echo "::set-output name=build-type::release"
+          else
+            echo "::set-output name=release-build-option::"
+            echo "::set-output name=build-type::debug"
           fi
 
       - name: Install Rust stable
@@ -52,48 +69,28 @@ jobs:
         run: |
           rustup target add ${{ matrix.cross-target }}
 
-      - name: debug build (straight build)
-        if: ${{ ! matrix.cross-target }}
+      - name: build (${{ steps.set-outputs.outputs.build-type }}; ${{ matrix.cross-target }})
         run: |
-          cargo build
-
-      - name: debug build (cross build)
-        if: ${{ matrix.cross-target }}
-        run: |
-          cargo build --target=${{ matrix.cross-target }}
-          ls target/debug/
-          find target/debug/
+          cargo build ${{ steps.set-outputs.outputs.release-build-option }} --target=${{ matrix.cross-target }}
           
-      - name: create debug artifact
+      - name: create artifact
         run: |
-          d=springql_client-${{ steps.set-build-target.outputs.build-target }}-debug
-          mkdir ${d}
+          artifact_dir=springql_client-${{ steps.set-outputs.outputs.build-target }}-${{ steps.set-outputs.outputs.build-type }}
+          target_dir=target/${{ matrix.cross-target }}/${{ steps.set-outputs.outputs.build-type }}
 
-          cp springql.h ${d}/
-          mv target/debug/libspringql_client.{so,dylib} ${d}/ || :
+          mkdir ${artifact_dir}
 
-          zip -r ${d}.zip ${d}
+          cp springql.h ${artifact_dir}/
+          mv ${target_dir}/libspringql_client.{so,dylib} ${artifact_dir}/ || :
 
-      - name: release build (straight build)
-        if: ${{ ! matrix.cross-target }}
-        run: |
-          cargo build --release
-      - name: create release artifact
-        run: |
-          d=springql_client-${{ steps.set-build-target.outputs.build-target }}-release
-          mkdir ${d}
+          zip -r ${artifact_dir}.zip ${artifact_dir}
 
-          cp springql.h ${d}/
-          mv target/release/libspringql_client.{so,dylib} ${d}/ || :
-
-          zip -r ${d}.zip ${d}
-
-      # - name: Upload Files to a GitHub Release (${{ steps.set-build-target.outputs.os }})
+      # - name: Upload Files to a GitHub Release (${{ steps.set-outputs.outputs.os }})
       #   uses: svenstaro/upload-release-action@2.2.1
       #   with:
       #     repo_token: ${{ secrets.GITHUB_TOKEN }}
       #     file_glob: true
-      #     file: springql_client-${{ steps.set-build-target.outputs.os }}-*.zip
+      #     file: springql_client-${{ steps.set-outputs.outputs.os }}-*.zip
       #     tag: ${{ github.ref }}
       #     overwrite: true
       #     prerelease: false
