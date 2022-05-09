@@ -48,19 +48,19 @@ jobs:
           override: true
 
       - name: Install cross-build toolchain
-        if: ${{ matrix.make.cross-target }}
+        if: ${{ matrix.cross-target }}
         run: |
-          rustup target add ${{ matrix.make.cross-target }}
+          rustup target add ${{ matrix.cross-target }}
 
       - name: debug build (straight build)
-        if: ${{ ! matrix.make.cross-target }}
+        if: ${{ ! matrix.cross-target }}
         run: |
           cargo build
 
       - name: debug build (cross build)
-        if: ${{ matrix.make.cross-target }}
+        if: ${{ matrix.cross-target }}
         run: |
-          cargo build --target=${{ matrix.make.cross-target }}
+          cargo build --target=${{ matrix.cross-target }}
           ls target/debug/
           find target/debug/
           
@@ -75,7 +75,7 @@ jobs:
           zip -r ${d}.zip ${d}
 
       - name: release build (straight build)
-        if: ${{ ! matrix.make.cross-target }}
+        if: ${{ ! matrix.cross-target }}
         run: |
           cargo build --release
       - name: create release artifact
