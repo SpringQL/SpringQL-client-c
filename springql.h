@@ -26,6 +26,7 @@ typedef enum SpringErrno {
   Unavailable = -9,
   Sql = -10,
   InvalidConfig = -11,
+  Null = -12,
   /**
    * Insufficient buffer size
    */
@@ -141,6 +142,20 @@ SpringRow *spring_pop(const SpringPipeline *pipeline, const char *queue);
 enum SpringErrno spring_row_close(SpringRow *row);
 
 /**
+ * See: springql_core::api::spring_column_i16
+ *
+ * # Returns
+ *
+ * - `0`: if there are no recent errors.
+ * - `< 0`: SpringErrno
+ *
+ * # Safety
+ *
+ * This function is unsafe because it uses raw pointer.
+ */
+enum SpringErrno spring_column_short(const SpringRow *row, uint16_t i_col, short *out);
+
+/**
  * See: springql_core::api::spring_column_i32
  *
  * # Returns
@@ -153,6 +168,20 @@ enum SpringErrno spring_row_close(SpringRow *row);
  * This function is unsafe because it uses raw pointer.
  */
 enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *out);
+
+/**
+ * See: springql_core::api::spring_column_i64
+ *
+ * # Returns
+ *
+ * - `0`: if there are no recent errors.
+ * - `< 0`: SpringErrno
+ *
+ * # Safety
+ *
+ * This function is unsafe because it uses raw pointer.
+ */
+enum SpringErrno spring_column_long(const SpringRow *row, uint16_t i_col, long *out);
 
 /**
  * See: springql_core::api::spring_column_text
@@ -170,6 +199,34 @@ enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *ou
  * This function is unsafe because it uses raw pointer.
  */
 int spring_column_text(const SpringRow *row, uint16_t i_col, char *out, int out_len);
+
+/**
+ * See: springql_core::api::spring_column_bool
+ *
+ * # Returns
+ *
+ * - `0`: if there are no recent errors.
+ * - `< 0`: SpringErrno
+ *
+ * # Safety
+ *
+ * This function is unsafe because it uses raw pointer.
+ */
+enum SpringErrno spring_column_bool(const SpringRow *row, uint16_t i_col, bool *out);
+
+/**
+ * See: springql_core::api::spring_column_f32
+ *
+ * # Returns
+ *
+ * - `0`: if there are no recent errors.
+ * - `< 0`: SpringErrno
+ *
+ * # Safety
+ *
+ * This function is unsafe because it uses raw pointer.
+ */
+enum SpringErrno spring_column_float(const SpringRow *row, uint16_t i_col, float *out);
 
 /**
  * Write the most recent error number into `errno` and message into a caller-provided buffer as a UTF-8
