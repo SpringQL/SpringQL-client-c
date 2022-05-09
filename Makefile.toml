@@ -42,9 +42,10 @@ dependencies = ["example-build"]
 script = ['''
 #!/usr/bin/env bash -eux
 cd c_example
-(python print_trade.py | nc -l 19876) &
+
+(python trade_projection/print_trade.py | nc -l 19876) &
 sleep 1
-./run_example
+./run_trade_projection
 ''']
 
 [tasks.doc]

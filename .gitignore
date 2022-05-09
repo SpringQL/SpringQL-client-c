@@ -13,4 +13,4 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 
-/c_example/run_example
+/c_example/run_*
