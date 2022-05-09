@@ -11,7 +11,7 @@ on:
 
 jobs:
   job-matrix:
-    name: ${{ matrix.os }}
+    name: ${{ matrix.os }}; ${{ matrix.cross-target }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
@@ -19,9 +19,25 @@ jobs:
         include:
           - os: ubuntu-latest
           - os: macos-latest
+          - os: macos-latest
+            cross-target: aarch64-apple-darwin
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Set build-target outputs
+        id: set-build-target
+        run: |
+          if [[ ${{ matrix.cross-target }} ]]; then
+            echo "::set-output name=build-target::${{ matrix.cross-target }}"
+          elif [[ ${{ matrix.os }} == "macos-latest" ]]; then
+            echo "::set-output name=build-target::x86_64-apple-darwin"
+          elif [[ ${{ matrix.os }} == "ubuntu-latest" ]]; then
+            echo "::set-output name=build-target::x86_64-unknown-linux-gnu"
+          else
+            echo "Unknown OS: ${{ matrix.os }}"
+            exit 1
+          fi
 
       - name: Install Rust stable
         uses: actions-rs/toolchain@v1
@@ -31,24 +47,26 @@ jobs:
           components: llvm-tools-preview
           override: true
 
-      - name: Set os outputs
-        id: set-os
+      - name: Install cross-build toolchain
+        if: ${{ matrix.make.cross-target }}
         run: |
-          if [[ ${{ matrix.os }} == "macos-latest" ]]; then
-            echo "::set-output name=os::macos"
-          elif [[ ${{ matrix.os }} == "ubuntu-latest" ]]; then
-            echo "::set-output name=os::linux"
-          else
-            echo "Unknown OS: ${{ matrix.os }}"
-            exit 1
-          fi
+          rustup target add ${{ matrix.make.cross-target }}
 
-      - name: debug build
+      - name: debug build (straight build)
+        if: ${{ ! matrix.make.cross-target }}
         run: |
           cargo build
+
+      - name: debug build (cross build)
+        if: ${{ matrix.make.cross-target }}
+        run: |
+          cargo build --target=${{ matrix.make.cross-target }}
+          ls target/debug/
+          find target/debug/
+          
       - name: create debug artifact
         run: |
-          d=springql_client-${{ steps.set-os.outputs.os }}-debug
+          d=springql_client-${{ steps.set-build-target.outputs.build-target }}-debug
           mkdir ${d}
 
           cp springql.h ${d}/
@@ -56,12 +74,13 @@ jobs:
 
           zip -r ${d}.zip ${d}
 
-      - name: release build
+      - name: release build (straight build)
+        if: ${{ ! matrix.make.cross-target }}
         run: |
           cargo build --release
       - name: create release artifact
         run: |
-          d=springql_client-${{ steps.set-os.outputs.os }}-release
+          d=springql_client-${{ steps.set-build-target.outputs.build-target }}-release
           mkdir ${d}
 
           cp springql.h ${d}/
@@ -69,12 +88,12 @@ jobs:
 
           zip -r ${d}.zip ${d}
 
-      # - name: Upload Files to a GitHub Release (${{ steps.set-os.outputs.os }})
+      # - name: Upload Files to a GitHub Release (${{ steps.set-build-target.outputs.os }})
       #   uses: svenstaro/upload-release-action@2.2.1
       #   with:
       #     repo_token: ${{ secrets.GITHUB_TOKEN }}
       #     file_glob: true
-      #     file: springql_client-${{ steps.set-os.outputs.os }}-*.zip
+      #     file: springql_client-${{ steps.set-build-target.outputs.os }}-*.zip
       #     tag: ${{ github.ref }}
       #     overwrite: true
       #     prerelease: false
