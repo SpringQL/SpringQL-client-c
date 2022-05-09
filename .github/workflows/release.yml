@@ -84,7 +84,7 @@ jobs:
 
           zip -r ${artifact_dir}.zip ${artifact_dir}
 
-      - name: Upload Files to a GitHub Release (${{ steps.set-outputs.outputs.os }})
+      - name: Upload Files to a GitHub Release
         uses: svenstaro/upload-release-action@2.2.1
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
