@@ -28,7 +28,7 @@ jobs:
       - name: Set build-target outputs
         id: set-build-target
         run: |
-          if [[ ${{ matrix.cross-target }} ]]; then
+          if [[ "${{ matrix.cross-target }}" ]]; then
             echo "::set-output name=build-target::${{ matrix.cross-target }}"
           elif [[ ${{ matrix.os }} == "macos-latest" ]]; then
             echo "::set-output name=build-target::x86_64-apple-darwin"
