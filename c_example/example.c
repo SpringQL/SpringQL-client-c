@@ -79,8 +79,8 @@ void setup_pipeline(const SpringPipeline *pipeline)
 
 void pop_print(const SpringPipeline *pipeline)
 {
-    const int ts_len = 128;
-    const char ts[ts_len];
+#define TS_LEN 128
+    const char ts[TS_LEN];
 
     for (int i = 0; i < 5; ++i)
     {
@@ -89,8 +89,8 @@ void pop_print(const SpringPipeline *pipeline)
         SpringRow *row = spring_pop(pipeline, "q_sink_trade");
         assert_not_null(row);
 
-        int r = spring_column_text(row, 0, (char *)ts, ts_len);
-        assert(r == strlen(ts));
+        int r = spring_column_text(row, 0, (char *)ts, TS_LEN);
+        assert((size_t)r == strlen(ts));
 
         int amount;
         ret = spring_column_int(row, 1, &amount);
