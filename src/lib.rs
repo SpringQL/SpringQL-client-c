@@ -6,7 +6,7 @@ use std::{
     convert::identity,
     ffi::{c_void, CStr},
     mem,
-    os::raw::{c_char, c_int},
+    os::raw::{c_char, c_float, c_int, c_long, c_short},
     panic::{catch_unwind, UnwindSafe},
     ptr,
 };
@@ -195,6 +195,31 @@ pub unsafe extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
     }
 }
 
+/// See: springql_core::api::spring_column_i16
+///
+/// # Returns
+///
+/// - `0`: if there are no recent errors.
+/// - `< 0`: SpringErrno
+///
+/// # Safety
+///
+/// This function is unsafe because it uses raw pointer.
+#[no_mangle]
+pub unsafe extern "C" fn spring_column_short(
+    row: *const SpringRow,
+    i_col: u16,
+    out: *mut c_short,
+) -> SpringErrno {
+    let row = &*((*row).0 as *const springql_core::SpringRow);
+    let i_col = i_col as usize;
+
+    with_catch(|| springql_core::spring_column_i16(row, i_col)).map_or_else(identity, |r| {
+        *out = r;
+        SpringErrno::Ok
+    })
+}
+
 /// See: springql_core::api::spring_column_i32
 ///
 /// # Returns
@@ -215,6 +240,31 @@ pub unsafe extern "C" fn spring_column_int(
     let i_col = i_col as usize;
 
     with_catch(|| springql_core::spring_column_i32(row, i_col)).map_or_else(identity, |r| {
+        *out = r;
+        SpringErrno::Ok
+    })
+}
+
+/// See: springql_core::api::spring_column_i64
+///
+/// # Returns
+///
+/// - `0`: if there are no recent errors.
+/// - `< 0`: SpringErrno
+///
+/// # Safety
+///
+/// This function is unsafe because it uses raw pointer.
+#[no_mangle]
+pub unsafe extern "C" fn spring_column_long(
+    row: *const SpringRow,
+    i_col: u16,
+    out: *mut c_long,
+) -> SpringErrno {
+    let row = &*((*row).0 as *const springql_core::SpringRow);
+    let i_col = i_col as usize;
+
+    with_catch(|| springql_core::spring_column_i64(row, i_col)).map_or_else(identity, |r| {
         *out = r;
         SpringErrno::Ok
     })
@@ -245,6 +295,56 @@ pub unsafe extern "C" fn spring_column_text(
 
     with_catch(|| springql_core::spring_column_text(row, i_col))
         .map_or_else(|errno| errno as c_int, |text| strcpy(&text, out, out_len))
+}
+
+/// See: springql_core::api::spring_column_bool
+///
+/// # Returns
+///
+/// - `0`: if there are no recent errors.
+/// - `< 0`: SpringErrno
+///
+/// # Safety
+///
+/// This function is unsafe because it uses raw pointer.
+#[no_mangle]
+pub unsafe extern "C" fn spring_column_bool(
+    row: *const SpringRow,
+    i_col: u16,
+    out: *mut bool,
+) -> SpringErrno {
+    let row = &*((*row).0 as *const springql_core::SpringRow);
+    let i_col = i_col as usize;
+
+    with_catch(|| springql_core::spring_column_bool(row, i_col)).map_or_else(identity, |r| {
+        *out = r;
+        SpringErrno::Ok
+    })
+}
+
+/// See: springql_core::api::spring_column_f32
+///
+/// # Returns
+///
+/// - `0`: if there are no recent errors.
+/// - `< 0`: SpringErrno
+///
+/// # Safety
+///
+/// This function is unsafe because it uses raw pointer.
+#[no_mangle]
+pub unsafe extern "C" fn spring_column_float(
+    row: *const SpringRow,
+    i_col: u16,
+    out: *mut c_float,
+) -> SpringErrno {
+    let row = &*((*row).0 as *const springql_core::SpringRow);
+    let i_col = i_col as usize;
+
+    with_catch(|| springql_core::spring_column_f32(row, i_col)).map_or_else(identity, |r| {
+        *out = r;
+        SpringErrno::Ok
+    })
 }
 
 fn with_catch<F, R>(f: F) -> Result<R, SpringErrno>
