@@ -1,13 +1,9 @@
 name: release
 
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-  # push:
-  #   tags:
-  #     - 'v*'
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   job-matrix:
@@ -72,7 +68,7 @@ jobs:
         run: |
           rustup target add ${{ matrix.cross-target }}
 
-      - name: build (${{ steps.set-outputs.outputs.build-type }}; ${{ matrix.cross-target }})
+      - name: build
         run: |
           cargo build ${{ steps.set-outputs.outputs.release-build-option }} ${{ steps.set-outputs.outputs.target-option }}
           
@@ -88,12 +84,11 @@ jobs:
 
           zip -r ${artifact_dir}.zip ${artifact_dir}
 
-      # - name: Upload Files to a GitHub Release (${{ steps.set-outputs.outputs.os }})
-      #   uses: svenstaro/upload-release-action@2.2.1
-      #   with:
-      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
-      #     file_glob: true
-      #     file: springql_client-${{ steps.set-outputs.outputs.os }}-*.zip
-      #     tag: ${{ github.ref }}
-      #     overwrite: true
-      #     prerelease: false
+      - name: Upload Files to a GitHub Release (${{ steps.set-outputs.outputs.os }})
+        uses: svenstaro/upload-release-action@2.2.1
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: springql_client-${{ steps.set-outputs.outputs.build-target }}-${{ steps.set-outputs.outputs.build-type }}.zip
+          tag: ${{ github.ref }}
+          overwrite: true
+          prerelease: false
