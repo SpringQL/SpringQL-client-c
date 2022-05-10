@@ -1,5 +1,10 @@
 // This file is part of https://github.com/SpringQL/SpringQL-client-c which is licensed under MIT OR Apache-2.0. See file LICENSE-MIT or LICENSE-APACHE for full license details.
 
+// Usage:
+//
+// $ ./a.out  # waiting for connection...
+// $ echo '{"ts": "2022-01-01 13:00:00.000000000", "temperature": 5.3}' |nc localhost 54300
+
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
