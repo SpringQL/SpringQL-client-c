@@ -82,7 +82,7 @@ int main()
 
     ret = spring_command(
         pipeline,
-        "CREATE SOURCE READER tcp_trade FOR source_temperature_celsius"
+        "CREATE SOURCE READER tcp_temperature_celsius FOR source_temperature_celsius"
         "    TYPE NET_SERVER OPTIONS ("
         "        PROTOCOL 'TCP',"
         "        PORT '54300'"
