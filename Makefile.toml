@@ -43,9 +43,21 @@ script = ['''
 #!/usr/bin/env bash -eux
 cd c_example
 
-(python trade_projection/print_trade.py | nc -l 19876) &
-sleep 1
-./run_trade_projection
+echo '-- Start doc_app1'
+  ./run_doc_app1 &
+  sleep 1
+  echo '{"ts": "2022-01-01 13:00:00.000000000", "temperature": 5.3}' |nc localhost 54300
+  sleep 1
+  pkill run_doc_app1
+echo '-- End doc_app1'
+echo
+
+echo '-- Start print_trade'
+  (python trade_projection/print_trade.py | nc -l 19876) &
+  sleep 1
+  ./run_trade_projection
+echo '-- End print_trade'
+echo
 ''']
 
 [tasks.doc]

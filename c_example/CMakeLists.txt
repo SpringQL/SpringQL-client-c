@@ -8,3 +8,6 @@ link_directories(../target/debug)
 
 add_executable(run_trade_projection trade_projection/trade_projection.c)
 target_link_libraries(run_trade_projection springql_client)
+
+add_executable(run_doc_app1 doc_app1/doc_app1.c)
+target_link_libraries(run_doc_app1 springql_client)
