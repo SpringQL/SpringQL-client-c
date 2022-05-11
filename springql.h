@@ -130,6 +130,22 @@ enum SpringErrno spring_command(const SpringPipeline *pipeline, const char *sql)
 SpringRow *spring_pop(const SpringPipeline *pipeline, const char *queue);
 
 /**
+ * See: springql_core::api::spring_pop_non_blocking
+ *
+ * # Returns
+ *
+ * - non-NULL: Successfully get a row.
+ * - NULL: Error occurred if `is_err` is true (check spring_last_err() for details). Otherwise, any row is not in the queue.
+ *
+ * # Safety
+ *
+ * This function is unsafe because it uses raw pointer.
+ */
+SpringRow *spring_pop_non_blocking(const SpringPipeline *pipeline,
+                                   const char *queue,
+                                   bool *is_err);
+
+/**
  * # Returns
  *
  * - `0`: if there are no recent errors.

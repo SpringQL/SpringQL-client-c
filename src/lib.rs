@@ -174,6 +174,42 @@ pub unsafe extern "C" fn spring_pop(
     )
 }
 
+/// See: springql_core::api::spring_pop_non_blocking
+///
+/// # Returns
+///
+/// - non-NULL: Successfully get a row.
+/// - NULL: Error occurred if `is_err` is true (check spring_last_err() for details). Otherwise, any row is not in the queue.
+///
+/// # Safety
+///
+/// This function is unsafe because it uses raw pointer.
+#[no_mangle]
+pub unsafe extern "C" fn spring_pop_non_blocking(
+    pipeline: *const SpringPipeline,
+    queue: *const c_char,
+    is_err: *mut bool,
+) -> *mut SpringRow {
+    *is_err = false;
+
+    let pipeline = &*((*pipeline).0 as *const springql_core::SpringPipeline);
+    let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
+
+    with_catch(|| springql_core::spring_pop_non_blocking(pipeline, &queue)).map_or_else(
+        |_| {
+            *is_err = true;
+            ptr::null_mut()
+        },
+        |opt_row| {
+            if let Some(row) = opt_row {
+                Box::into_raw(Box::new(SpringRow(mem::transmute(Box::new(row)))))
+            } else {
+                ptr::null_mut()
+            }
+        },
+    )
+}
+
 /// # Returns
 ///
 /// - `0`: if there are no recent errors.

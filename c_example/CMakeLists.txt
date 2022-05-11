@@ -11,3 +11,6 @@ target_link_libraries(run_trade_projection springql_client)
 
 add_executable(run_doc_app1 doc_app1/doc_app1.c)
 target_link_libraries(run_doc_app1 springql_client)
+
+add_executable(run_doc_app2 doc_app2/doc_app2.c)
+target_link_libraries(run_doc_app2 springql_client)
