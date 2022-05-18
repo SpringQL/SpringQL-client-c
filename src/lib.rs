@@ -2,6 +2,8 @@
 
 //! C-API
 
+#![allow(clippy::missing_safety_doc)] // C header file does not need `Safety` section
+
 use std::{
     convert::identity,
     ffi::{c_void, CStr},
@@ -23,19 +25,22 @@ pub mod spring_last_err;
 
 pub(crate) mod cstr;
 
+/// Configuration.
 #[non_exhaustive]
 #[repr(transparent)]
 pub struct SpringConfig(*mut c_void);
 
+/// Pipeline (dataflow definition) in SpringQL.
 #[non_exhaustive]
 #[repr(transparent)]
 pub struct SpringPipeline(*mut c_void);
 
+/// Row object from an in memory queue.
 #[non_exhaustive]
 #[repr(transparent)]
 pub struct SpringRow(*mut c_void);
 
-/// See: springql_core::api::spring_config_default
+/// Returns default configuration.
 ///
 /// Returned value is not modifiable (it is just a void pointer).
 /// If you would like to change the default configuration, use `spring_config_toml()` instead.
@@ -47,14 +52,21 @@ pub extern "C" fn spring_config_default() -> *mut SpringConfig {
     })))
 }
 
-/// See: springql_core::api::spring_config_default
+/// Configuration by TOML format string.
 ///
 /// Returned value is not modifiable (it is just a void pointer).
-/// If you would like to change the default configuration, use `spring_config_toml()` instead.
 ///
-/// # Safety
+/// # Parameters
 ///
-/// This function is unsafe because it uses raw pointer.
+/// - `overwrite_config_toml`: TOML format configuration to overwrite default.
+///   See https://springql.github.io/deployment/configuration for TOML format and configuration values.
+///
+/// # Panics
+///
+/// Currently, the process aborts when:
+/// 
+/// - `overwrite_config_toml` includes invalid key and/or value.
+/// - `overwrite_config_toml` is not valid as TOML.
 #[no_mangle]
 pub unsafe extern "C" fn spring_config_toml(
     overwrite_config_toml: *const c_char,
@@ -66,14 +78,12 @@ pub unsafe extern "C" fn spring_config_toml(
     Box::into_raw(Box::new(SpringConfig(mem::transmute(Box::new(config)))))
 }
 
+/// Frees heap occupied by a `SpringConfig`.
+///
 /// # Returns
 ///
-/// - `0`: if there are no recent errors.
-/// - `< 0`: SpringErrno
-///
-/// # Safety
-///
-/// This function is unsafe because it uses raw pointer.
+/// - `Ok`: on success.
+/// - `CNull`: `config` is a NULL pointer.
 #[no_mangle]
 pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> SpringErrno {
     if config.is_null() {
@@ -87,16 +97,16 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
     }
 }
 
-/// See: springql_core::api::spring_open
+/// Creates and open an in-process stream pipeline.
 ///
 /// # Returns
 ///
 /// - non-NULL: on success
 /// - NULL: on failure. Check spring_last_err() for details.
 ///
-/// # Safety
+/// # Errors
 ///
-/// This function is unsafe because it uses raw pointer.
+/// No errors are expected currently.
 #[no_mangle]
 pub unsafe extern "C" fn spring_open(config: *const SpringConfig) -> *mut SpringPipeline {
     let config = &*((*config).0 as *const springql_core::SpringConfig);
@@ -107,14 +117,12 @@ pub unsafe extern "C" fn spring_open(config: *const SpringConfig) -> *mut Spring
     )
 }
 
+/// Frees heap occupied by a `SpringPipeline`.
+///
 /// # Returns
 ///
-/// - `0`: if there are no recent errors.
-/// - `< 0`: SpringErrno
-///
-/// # Safety
-///
-/// This function is unsafe because it uses raw pointer.
+/// - `Ok`: on success.
+/// - `CNull`: `pipeline` is a NULL pointer.
 #[no_mangle]
 pub unsafe extern "C" fn spring_close(pipeline: *mut SpringPipeline) -> SpringErrno {
     if pipeline.is_null() {
@@ -128,16 +136,17 @@ pub unsafe extern "C" fn spring_close(pipeline: *mut SpringPipeline) -> SpringEr
     }
 }
 
-/// See: springql_core::api::spring_command
+/// Execute commands (DDL) to modify the pipeline.
 ///
 /// # Returns
 ///
-/// - `0`: if there are no recent errors.
-/// - `< 0`: SpringErrno
-///
-/// # Safety
-///
-/// This function is unsafe because it uses raw pointer.
+/// - `Ok`: on success.
+/// - `Sql`:
+///   - Invalid SQL syntax.
+///   - Refers to undefined objects (streams, pumps, etc)
+///   - Other semantic errors.
+/// - `InvalidOption`:
+///   - `OPTIONS` in `CREATE` statement includes invalid key or value.
 #[no_mangle]
 pub unsafe extern "C" fn spring_command(
     pipeline: *const SpringPipeline,
@@ -150,16 +159,20 @@ pub unsafe extern "C" fn spring_command(
         .map_or_else(identity, |()| SpringErrno::Ok)
 }
 
-/// See: springql_core::api::spring_pop
+/// Pop a row from an in memory queue. This is a blocking function.
+///
+/// Do not call this function from threads.
+/// If you need to pop from multiple in-memory queues using threads, use `spring_pop_non_blocking()`.
+/// See: https://github.com/SpringQL/SpringQL/issues/125
 ///
 /// # Returns
 ///
 /// - non-NULL: on success
 /// - NULL: on failure. Check spring_last_err() for details.
 ///
-/// # Safety
+/// # Errors
 ///
-/// This function is unsafe because it uses raw pointer.
+/// - `Unavailable`: queue named `queue` does not exist.
 #[no_mangle]
 pub unsafe extern "C" fn spring_pop(
     pipeline: *const SpringPipeline,
@@ -174,16 +187,16 @@ pub unsafe extern "C" fn spring_pop(
     )
 }
 
-/// See: springql_core::api::spring_pop_non_blocking
+/// Pop a row from an in memory queue. This is a non-blocking function.
 ///
 /// # Returns
 ///
 /// - non-NULL: Successfully get a row.
 /// - NULL: Error occurred if `is_err` is true (check spring_last_err() for details). Otherwise, any row is not in the queue.
 ///
-/// # Safety
+/// # Errors
 ///
-/// This function is unsafe because it uses raw pointer.
+/// - `Unavailable`: queue named `queue` does not exist.
 #[no_mangle]
 pub unsafe extern "C" fn spring_pop_non_blocking(
     pipeline: *const SpringPipeline,
@@ -210,14 +223,12 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
     )
 }
 
+/// Frees heap occupied by a `SpringRow`.
+///
 /// # Returns
 ///
-/// - `0`: if there are no recent errors.
-/// - `< 0`: SpringErrno
-///
-/// # Safety
-///
-/// This function is unsafe because it uses raw pointer.
+/// - `Ok`: on success.
+/// - `CNull`: `pipeline` is a NULL pointer.
 #[no_mangle]
 pub unsafe extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
     if row.is_null() {
@@ -231,16 +242,21 @@ pub unsafe extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
     }
 }
 
-/// See: springql_core::api::spring_column_i16
+/// Get a 2-byte integer column.
+///
+/// # Parameters
+/// 
+/// - `row`: A `SpringRow` pointer to get a column value from.
+/// - `i_col`: The column index to get a value from.
+/// - `out`: A pointer to a buffer to store the column value.
 ///
 /// # Returns
 ///
-/// - `0`: if there are no recent errors.
-/// - `< 0`: SpringErrno
-///
-/// # Safety
-///
-/// This function is unsafe because it uses raw pointer.
+/// - `Ok`: On success.
+/// - `Unavailable`:
+///   - Column pointed by `i_col` is already fetched.
+///   - `i_col` is out of range.
+/// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_short(
     row: *const SpringRow,
@@ -256,16 +272,21 @@ pub unsafe extern "C" fn spring_column_short(
     })
 }
 
-/// See: springql_core::api::spring_column_i32
+/// Get a 4-byte integer column.
+///
+/// # Parameters
+/// 
+/// - `row`: A `SpringRow` pointer to get a column value from.
+/// - `i_col`: The column index to get a value from.
+/// - `out`: A pointer to a buffer to store the column value.
 ///
 /// # Returns
 ///
-/// - `0`: if there are no recent errors.
-/// - `< 0`: SpringErrno
-///
-/// # Safety
-///
-/// This function is unsafe because it uses raw pointer.
+/// - `Ok`: On success.
+/// - `Unavailable`:
+///   - Column pointed by `i_col` is already fetched.
+///   - `i_col` is out of range.
+/// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_int(
     row: *const SpringRow,
@@ -281,16 +302,21 @@ pub unsafe extern "C" fn spring_column_int(
     })
 }
 
-/// See: springql_core::api::spring_column_i64
+/// Get an 8-byte integer column.
 ///
+/// # Parameters
+/// 
+/// - `row`: A `SpringRow` pointer to get a column value from.
+/// - `i_col`: The column index to get a value from.
+/// - `out`: A pointer to a buffer to store the column value.
+/// 
 /// # Returns
 ///
-/// - `0`: if there are no recent errors.
-/// - `< 0`: SpringErrno
-///
-/// # Safety
-///
-/// This function is unsafe because it uses raw pointer.
+/// - `Ok`: On success.
+/// - `Unavailable`:
+///   - Column pointed by `i_col` is already fetched.
+///   - `i_col` is out of range.
+/// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_long(
     row: *const SpringRow,
@@ -306,19 +332,22 @@ pub unsafe extern "C" fn spring_column_long(
     })
 }
 
-/// See: springql_core::api::spring_column_text
+/// Get a text column.
 ///
-/// This returns UTF-8 string into `out`.
-///
+/// # Parameters
+/// 
+/// - `row`: A `SpringRow` pointer to get a column value from.
+/// - `i_col`: The column index to get a value from.
+/// - `out`: A pointer to a buffer to store the column value.
+/// - `out_len`: The length of the buffer pointed by `out`.
+/// 
 /// # Returns
 ///
-/// - `0`: if there are no recent errors.
-/// - `> 0`: the length of the recent error message.
-/// - `< 0`: SpringErrno
-///
-/// # Safety
-///
-/// This function is unsafe because it uses raw pointer.
+/// - `> 0`: Length of the text.
+/// - `Unavailable`:
+///   - Column pointed by `i_col` is already fetched.
+///   - `i_col` is out of range.
+/// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_text(
     row: *const SpringRow,
@@ -333,16 +362,21 @@ pub unsafe extern "C" fn spring_column_text(
         .map_or_else(|errno| errno as c_int, |text| strcpy(&text, out, out_len))
 }
 
-/// See: springql_core::api::spring_column_bool
+/// Get a bool column.
 ///
+/// # Parameters
+/// 
+/// - `row`: A `SpringRow` pointer to get a column value from.
+/// - `i_col`: The column index to get a value from.
+/// - `out`: A pointer to a buffer to store the column value.
+/// 
 /// # Returns
 ///
-/// - `0`: if there are no recent errors.
-/// - `< 0`: SpringErrno
-///
-/// # Safety
-///
-/// This function is unsafe because it uses raw pointer.
+/// - `Ok`: On success.
+/// - `Unavailable`:
+///   - Column pointed by `i_col` is already fetched.
+///   - `i_col` is out of range.
+/// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_bool(
     row: *const SpringRow,
@@ -358,16 +392,21 @@ pub unsafe extern "C" fn spring_column_bool(
     })
 }
 
-/// See: springql_core::api::spring_column_f32
+/// Get a 4-byte floating point column.
 ///
+/// # Parameters
+/// 
+/// - `row`: A `SpringRow` pointer to get a column value from.
+/// - `i_col`: The column index to get a value from.
+/// - `out`: A pointer to a buffer to store the column value.
+/// 
 /// # Returns
 ///
-/// - `0`: if there are no recent errors.
-/// - `< 0`: SpringErrno
-///
-/// # Safety
-///
-/// This function is unsafe because it uses raw pointer.
+/// - `Ok`: On success.
+/// - `Unavailable`:
+///   - Column pointed by `i_col` is already fetched.
+///   - `i_col` is out of range.
+/// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_float(
     row: *const SpringRow,
