@@ -11,7 +11,7 @@ use crate::spring_errno::SpringErrno;
 
 /// # Returns
 ///
-/// - `> 0`: the length of the recent error message.
+/// - `> 0`: the length of `src`.
 /// - `< 0`: SpringErrno
 pub(super) fn strcpy(src: &str, dest_buf: *mut c_char, dest_len: c_int) -> c_int {
     if src.len() >= dest_len as usize {

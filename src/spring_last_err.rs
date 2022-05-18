@@ -89,10 +89,6 @@ pub(super) fn update_last_error(err: LastError) {
 /// - `0`: if there are no recent errors.
 /// - `> 0`: the length of the recent error message.
 /// - `< 0`: SpringErrno
-///
-/// # Safety
-///
-/// This function is unsafe because it writes into a caller-provided buffer.
 #[no_mangle]
 pub unsafe extern "C" fn spring_last_err(
     errno: *mut SpringErrno,
