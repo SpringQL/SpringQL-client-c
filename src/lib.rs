@@ -6,8 +6,7 @@
 
 use std::{
     convert::identity,
-    ffi::{c_void, CStr},
-    mem,
+    ffi::CStr,
     os::raw::{c_char, c_float, c_int, c_long, c_short},
     panic::{catch_unwind, UnwindSafe},
     ptr,
@@ -25,20 +24,97 @@ pub mod spring_last_err;
 
 pub(crate) mod cstr;
 
-/// Configuration.
-#[non_exhaustive]
-#[repr(transparent)]
-pub struct SpringConfig(*mut c_void);
+mod conf {
+    use springql_core::low_level_rs as ll_api;
+    use std::{ffi::c_void, mem};
+    /// Configuration.
+    #[non_exhaustive]
+    #[repr(transparent)]
+    pub struct SpringConfig(*mut c_void);
 
-/// Pipeline (dataflow definition) in SpringQL.
-#[non_exhaustive]
-#[repr(transparent)]
-pub struct SpringPipeline(*mut c_void);
+    impl SpringConfig {
+        pub fn new(config: ll_api::SpringConfig) -> Self {
+            SpringConfig(unsafe { mem::transmute(Box::new(config)) })
+        }
 
-/// Row object from an in memory queue.
-#[non_exhaustive]
-#[repr(transparent)]
-pub struct SpringRow(*mut c_void);
+        pub fn llconf(&self) -> &ll_api::SpringConfig {
+            unsafe { &*(self.0 as *const ll_api::SpringConfig) }
+        }
+
+        pub fn drop(ptr: *mut SpringConfig) {
+            let outer = unsafe { Box::from_raw(ptr) };
+            let inner = unsafe { Box::from_raw(outer.0) };
+            drop(inner);
+            drop(outer);
+        }
+
+        pub fn into_ptr(self) -> *mut SpringConfig {
+            Box::into_raw(Box::new(self))
+        }
+    }
+}
+use conf::SpringConfig;
+mod pipe {
+    use springql_core::low_level_rs as ll_api;
+    use std::{ffi::c_void, mem};
+
+    /// Pipeline (dataflow definition) in SpringQL.
+    #[non_exhaustive]
+    #[repr(transparent)]
+    pub struct SpringPipeline(*mut c_void);
+
+    impl SpringPipeline {
+        pub fn new(pipeline: ll_api::SpringPipeline) -> Self {
+            SpringPipeline(unsafe { mem::transmute(Box::new(pipeline)) })
+        }
+
+        pub fn llpipe(&self) -> &ll_api::SpringPipeline {
+            unsafe { &*(self.0 as *const ll_api::SpringPipeline) }
+        }
+
+        pub fn drop(ptr: *mut SpringPipeline) {
+            let outer = unsafe { Box::from_raw(ptr) };
+            let inner = unsafe { Box::from_raw(outer.0) };
+            drop(inner);
+            drop(outer);
+        }
+
+        pub fn into_ptr(self) -> *mut SpringPipeline {
+            Box::into_raw(Box::new(self))
+        }
+    }
+}
+use pipe::SpringPipeline;
+
+mod row {
+    use springql_core::low_level_rs as ll_api;
+    use std::{ffi::c_void, mem};
+
+    /// Row object from an in memory queue.
+    #[non_exhaustive]
+    #[repr(transparent)]
+    pub struct SpringRow(*mut c_void);
+
+    impl SpringRow {
+        pub fn new(row: ll_api::SpringRow) -> Self {
+            SpringRow(unsafe { mem::transmute(Box::new(row)) })
+        }
+
+        pub fn llrow(&self) -> &ll_api::SpringRow {
+            unsafe { &*(self.0 as *const ll_api::SpringRow) }
+        }
+        pub fn drop(ptr: *mut SpringRow) {
+            let outer = unsafe { Box::from_raw(ptr) };
+            let inner = unsafe { Box::from_raw(outer.0) };
+            drop(inner);
+            drop(outer);
+        }
+        pub fn into_ptr(self) -> *mut SpringRow {
+            Box::into_raw(Box::new(self))
+        }
+    }
+}
+use row::SpringRow;
 
 /// Returns default configuration.
 ///
@@ -47,9 +123,7 @@ pub struct SpringRow(*mut c_void);
 #[no_mangle]
 pub extern "C" fn spring_config_default() -> *mut SpringConfig {
     let config = ll_api::spring_config_default();
-    Box::into_raw(Box::new(SpringConfig(unsafe {
-        mem::transmute(Box::new(config))
-    })))
+    SpringConfig::new(config).into_ptr()
 }
 
 /// Configuration by TOML format string.
@@ -71,11 +145,11 @@ pub extern "C" fn spring_config_default() -> *mut SpringConfig {
 pub unsafe extern "C" fn spring_config_toml(
     overwrite_config_toml: *const c_char,
 ) -> *mut SpringConfig {
-    let s = { CStr::from_ptr(overwrite_config_toml) };
+    let s = CStr::from_ptr(overwrite_config_toml);
     let s = s.to_str().expect("failed to parse TOML string into UTF-8");
 
     let config = ll_api::spring_config_toml(s).expect("failed to parse TOML config");
-    Box::into_raw(Box::new(SpringConfig(mem::transmute(Box::new(config)))))
+    SpringConfig::new(config).into_ptr()
 }
 
 /// Frees heap occupied by a `SpringConfig`.
@@ -89,10 +163,7 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
     if config.is_null() {
         SpringErrno::CNull
     } else {
-        let outer = Box::from_raw(config);
-        let inner = Box::from_raw(outer.0);
-        drop(inner);
-        drop(outer);
+        SpringConfig::drop(config);
         SpringErrno::Ok
     }
 }
@@ -109,11 +180,11 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
 /// No errors are expected currently.
 #[no_mangle]
 pub unsafe extern "C" fn spring_open(config: *const SpringConfig) -> *mut SpringPipeline {
-    let config = &*((*config).0 as *const ll_api::SpringConfig);
+    let config = (*config).llconf();
 
     with_catch(|| ll_api::spring_open(config)).map_or_else(
         |_| ptr::null_mut(),
-        |pipeline| Box::into_raw(Box::new(SpringPipeline(mem::transmute(Box::new(pipeline))))),
+        |pipeline| SpringPipeline::new(pipeline).into_ptr(),
     )
 }
 
@@ -128,10 +199,7 @@ pub unsafe extern "C" fn spring_close(pipeline: *mut SpringPipeline) -> SpringEr
     if pipeline.is_null() {
         SpringErrno::CNull
     } else {
-        let outer = Box::from_raw(pipeline);
-        let inner = Box::from_raw(outer.0);
-        drop(inner);
-        drop(outer);
+        SpringPipeline::drop(pipeline);
         SpringErrno::Ok
     }
 }
@@ -152,7 +220,7 @@ pub unsafe extern "C" fn spring_command(
     pipeline: *const SpringPipeline,
     sql: *const c_char,
 ) -> SpringErrno {
-    let pipeline = &*((*pipeline).0 as *const ll_api::SpringPipeline);
+    let pipeline = (*pipeline).llpipe();
     let sql = CStr::from_ptr(sql).to_string_lossy().into_owned();
 
     with_catch(|| ll_api::spring_command(pipeline, &sql))
@@ -178,13 +246,11 @@ pub unsafe extern "C" fn spring_pop(
     pipeline: *const SpringPipeline,
     queue: *const c_char,
 ) -> *mut SpringRow {
-    let pipeline = &*((*pipeline).0 as *const ll_api::SpringPipeline);
+    let pipeline = (*pipeline).llpipe();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
 
-    with_catch(|| ll_api::spring_pop(pipeline, &queue)).map_or_else(
-        |_| ptr::null_mut(),
-        |row| Box::into_raw(Box::new(SpringRow(mem::transmute(Box::new(row))))),
-    )
+    with_catch(|| ll_api::spring_pop(pipeline, &queue))
+        .map_or_else(|_| ptr::null_mut(), |row| SpringRow::new(row).into_ptr())
 }
 
 /// Pop a row from an in memory queue. This is a non-blocking function.
@@ -205,7 +271,7 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
 ) -> *mut SpringRow {
     *is_err = false;
 
-    let pipeline = &*((*pipeline).0 as *const ll_api::SpringPipeline);
+    let pipeline = (*pipeline).llpipe();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
 
     with_catch(|| ll_api::spring_pop_non_blocking(pipeline, &queue)).map_or_else(
@@ -215,7 +281,7 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
         },
         |opt_row| {
             if let Some(row) = opt_row {
-                Box::into_raw(Box::new(SpringRow(mem::transmute(Box::new(row)))))
+                SpringRow::new(row).into_ptr()
             } else {
                 ptr::null_mut()
             }
@@ -230,14 +296,11 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
 /// - `Ok`: on success.
 /// - `CNull`: `pipeline` is a NULL pointer.
 #[no_mangle]
-pub unsafe extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
+pub extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
     if row.is_null() {
         SpringErrno::CNull
     } else {
-        let outer = Box::from_raw(row);
-        let inner = Box::from_raw(outer.0);
-        drop(inner);
-        drop(outer);
+        SpringRow::drop(row);
         SpringErrno::Ok
     }
 }
@@ -263,7 +326,7 @@ pub unsafe extern "C" fn spring_column_short(
     i_col: u16,
     out: *mut c_short,
 ) -> SpringErrno {
-    let row = &*((*row).0 as *const ll_api::SpringRow);
+    let row = (*row).llrow();
     let i_col = i_col as usize;
 
     with_catch(|| ll_api::spring_column_i16(row, i_col)).map_or_else(identity, |r| {
@@ -293,7 +356,7 @@ pub unsafe extern "C" fn spring_column_int(
     i_col: u16,
     out: *mut c_int,
 ) -> SpringErrno {
-    let row = &*((*row).0 as *const ll_api::SpringRow);
+    let row = (*row).llrow();
     let i_col = i_col as usize;
 
     with_catch(|| ll_api::spring_column_i32(row, i_col)).map_or_else(identity, |r| {
@@ -323,7 +386,7 @@ pub unsafe extern "C" fn spring_column_long(
     i_col: u16,
     out: *mut c_long,
 ) -> SpringErrno {
-    let row = &*((*row).0 as *const ll_api::SpringRow);
+    let row = (*row).llrow();
     let i_col = i_col as usize;
 
     with_catch(|| ll_api::spring_column_i64(row, i_col)).map_or_else(identity, |r| {
@@ -355,7 +418,7 @@ pub unsafe extern "C" fn spring_column_text(
     out: *mut c_char,
     out_len: c_int,
 ) -> c_int {
-    let row = &*((*row).0 as *const ll_api::SpringRow);
+    let row = (*row).llrow();
     let i_col = i_col as usize;
 
     with_catch(|| ll_api::spring_column_text(row, i_col))
@@ -383,7 +446,7 @@ pub unsafe extern "C" fn spring_column_bool(
     i_col: u16,
     out: *mut bool,
 ) -> SpringErrno {
-    let row = &*((*row).0 as *const ll_api::SpringRow);
+    let row = (*row).llrow();
     let i_col = i_col as usize;
 
     with_catch(|| ll_api::spring_column_bool(row, i_col)).map_or_else(identity, |r| {
@@ -413,7 +476,7 @@ pub unsafe extern "C" fn spring_column_float(
     i_col: u16,
     out: *mut c_float,
 ) -> SpringErrno {
-    let row = &*((*row).0 as *const ll_api::SpringRow);
+    let row = (*row).llrow();
     let i_col = i_col as usize;
 
     with_catch(|| ll_api::spring_column_f32(row, i_col)).map_or_else(identity, |r| {
