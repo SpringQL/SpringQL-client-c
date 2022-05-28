@@ -15,7 +15,7 @@ use ::springql_core::error::SpringError;
 use cstr::strcpy;
 use spring_last_err::{update_last_error, LastError};
 
-use springql_core::high_level_rs::{self as hl_api, SpringRowHL};
+use springql_core::high_level_rs as hl_api;
 
 use spring_errno::SpringErrno;
 
