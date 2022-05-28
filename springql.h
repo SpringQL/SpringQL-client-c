@@ -283,7 +283,7 @@ enum SpringErrno spring_column_bool(const SpringRow *row, uint16_t i_col, bool *
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_float(const SpringRowHL *row, uint16_t i_col, float *out);
+enum SpringErrno spring_column_float(const SpringRow *row, uint16_t i_col, float *out);
 
 /**
  * Write the most recent error number into `errno` and message into a caller-provided buffer as a UTF-8

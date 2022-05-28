@@ -502,11 +502,11 @@ pub unsafe extern "C" fn spring_column_bool(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_float(
-    row: *const SpringRowHL,
+    row: *const SpringRow,
     i_col: u16,
     out: *mut c_float,
 ) -> SpringErrno {
-    let row = Box::from_raw(row as *mut SpringRowHL);
+    let row = (*row).row();
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
