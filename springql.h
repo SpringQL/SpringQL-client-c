@@ -102,6 +102,20 @@ enum SpringErrno spring_config_close(SpringConfig *config);
 SpringPipeline *spring_open(const SpringConfig *config);
 
 /**
+ * Creates and open an in-process stream pipeline.
+ *
+ * # Returns
+ *
+ * - non-NULL: on success
+ * - NULL: on failure. Check spring_last_err() for details.
+ *
+ * # Errors
+ *
+ * No errors are expected currently.
+ */
+SpringPipelineHL *spring_open_hl(const SpringConfig *config);
+
+/**
  * Frees heap occupied by a `SpringPipeline`.
  *
  * # Returns
@@ -110,6 +124,16 @@ SpringPipeline *spring_open(const SpringConfig *config);
  * - `CNull`: `pipeline` is a NULL pointer.
  */
 enum SpringErrno spring_close(SpringPipeline *pipeline);
+
+/**
+ * Frees heap occupied by a `SpringPipeline`.
+ *
+ * # Returns
+ *
+ * - `Ok`: on success.
+ * - `CNull`: `pipeline` is a NULL pointer.
+ */
+enum SpringErrno spring_close_hl(SpringPipelineHL *pipeline);
 
 /**
  * Execute commands (DDL) to modify the pipeline.
@@ -125,6 +149,21 @@ enum SpringErrno spring_close(SpringPipeline *pipeline);
  *   - `OPTIONS` in `CREATE` statement includes invalid key or value.
  */
 enum SpringErrno spring_command(const SpringPipeline *pipeline, const char *sql);
+
+/**
+ * Execute commands (DDL) to modify the pipeline.
+ *
+ * # Returns
+ *
+ * - `Ok`: on success.
+ * - `Sql`:
+ *   - Invalid SQL syntax.
+ *   - Refers to undefined objects (streams, pumps, etc)
+ *   - Other semantic errors.
+ * - `InvalidOption`:
+ *   - `OPTIONS` in `CREATE` statement includes invalid key or value.
+ */
+enum SpringErrno spring_command_hl(const SpringPipelineHL *pipeline, const char *sql);
 
 /**
  * Pop a row from an in memory queue. This is a blocking function.
@@ -145,6 +184,24 @@ enum SpringErrno spring_command(const SpringPipeline *pipeline, const char *sql)
 SpringRow *spring_pop(const SpringPipeline *pipeline, const char *queue);
 
 /**
+ * Pop a row from an in memory queue. This is a blocking function.
+ *
+ * Do not call this function from threads.
+ * If you need to pop from multiple in-memory queues using threads, use `spring_pop_non_blocking()`.
+ * See: https://github.com/SpringQL/SpringQL/issues/125
+ *
+ * # Returns
+ *
+ * - non-NULL: on success
+ * - NULL: on failure. Check spring_last_err() for details.
+ *
+ * # Errors
+ *
+ * - `Unavailable`: queue named `queue` does not exist.
+ */
+SpringRowHL *spring_pop_hl(const SpringPipeline *pipeline, const char *queue);
+
+/**
  * Pop a row from an in memory queue. This is a non-blocking function.
  *
  * # Returns
@@ -161,6 +218,22 @@ SpringRow *spring_pop_non_blocking(const SpringPipeline *pipeline,
                                    bool *is_err);
 
 /**
+ * Pop a row from an in memory queue. This is a non-blocking function.
+ *
+ * # Returns
+ *
+ * - non-NULL: Successfully get a row.
+ * - NULL: Error occurred if `is_err` is true (check spring_last_err() for details). Otherwise, any row is not in the queue.
+ *
+ * # Errors
+ *
+ * - `Unavailable`: queue named `queue` does not exist.
+ */
+SpringRowHL *spring_pop_non_blocking_hl(const SpringPipelineHL *pipeline,
+                                        const char *queue,
+                                        bool *is_err);
+
+/**
  * Frees heap occupied by a `SpringRow`.
  *
  * # Returns
@@ -169,6 +242,16 @@ SpringRow *spring_pop_non_blocking(const SpringPipeline *pipeline,
  * - `CNull`: `pipeline` is a NULL pointer.
  */
 enum SpringErrno spring_row_close(SpringRow *row);
+
+/**
+ * Frees heap occupied by a `SpringRow`.
+ *
+ * # Returns
+ *
+ * - `Ok`: on success.
+ * - `CNull`: `pipeline` is a NULL pointer.
+ */
+enum SpringErrno spring_row_close_hl(SpringRowHL *row);
 
 /**
  * Get a 2-byte integer column.
@@ -190,6 +273,25 @@ enum SpringErrno spring_row_close(SpringRow *row);
 enum SpringErrno spring_column_short(const SpringRow *row, uint16_t i_col, short *out);
 
 /**
+ * Get a 2-byte integer column.
+ *
+ * # Parameters
+ *
+ * - `row`: A `SpringRow` pointer to get a column value from.
+ * - `i_col`: The column index to get a value from.
+ * - `out`: A pointer to a buffer to store the column value.
+ *
+ * # Returns
+ *
+ * - `Ok`: On success.
+ * - `Unavailable`:
+ *   - Column pointed by `i_col` is already fetched.
+ *   - `i_col` is out of range.
+ * - `CNull`: Column value is NULL.
+ */
+enum SpringErrno spring_column_short_hl(const SpringRowHL *row, uint16_t i_col, short *out);
+
+/**
  * Get a 4-byte integer column.
  *
  * # Parameters
@@ -209,6 +311,25 @@ enum SpringErrno spring_column_short(const SpringRow *row, uint16_t i_col, short
 enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *out);
 
 /**
+ * Get a 4-byte integer column.
+ *
+ * # Parameters
+ *
+ * - `row`: A `SpringRow` pointer to get a column value from.
+ * - `i_col`: The column index to get a value from.
+ * - `out`: A pointer to a buffer to store the column value.
+ *
+ * # Returns
+ *
+ * - `Ok`: On success.
+ * - `Unavailable`:
+ *   - Column pointed by `i_col` is already fetched.
+ *   - `i_col` is out of range.
+ * - `CNull`: Column value is NULL.
+ */
+enum SpringErrno spring_column_int_hl(const SpringRowHL *row, uint16_t i_col, int *out);
+
+/**
  * Get an 8-byte integer column.
  *
  * # Parameters
@@ -226,6 +347,25 @@ enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *ou
  * - `CNull`: Column value is NULL.
  */
 enum SpringErrno spring_column_long(const SpringRow *row, uint16_t i_col, long *out);
+
+/**
+ * Get an 8-byte integer column.
+ *
+ * # Parameters
+ *
+ * - `row`: A `SpringRow` pointer to get a column value from.
+ * - `i_col`: The column index to get a value from.
+ * - `out`: A pointer to a buffer to store the column value.
+ *
+ * # Returns
+ *
+ * - `Ok`: On success.
+ * - `Unavailable`:
+ *   - Column pointed by `i_col` is already fetched.
+ *   - `i_col` is out of range.
+ * - `CNull`: Column value is NULL.
+ */
+enum SpringErrno spring_column_long_hl(const SpringRowHL *row, uint16_t i_col, long *out);
 
 /**
  * Get a text column.
@@ -248,6 +388,26 @@ enum SpringErrno spring_column_long(const SpringRow *row, uint16_t i_col, long *
 int spring_column_text(const SpringRow *row, uint16_t i_col, char *out, int out_len);
 
 /**
+ * Get a text column.
+ *
+ * # Parameters
+ *
+ * - `row`: A `SpringRow` pointer to get a column value from.
+ * - `i_col`: The column index to get a value from.
+ * - `out`: A pointer to a buffer to store the column value.
+ * - `out_len`: The length of the buffer pointed by `out`.
+ *
+ * # Returns
+ *
+ * - `> 0`: Length of the text.
+ * - `Unavailable`:
+ *   - Column pointed by `i_col` is already fetched.
+ *   - `i_col` is out of range.
+ * - `CNull`: Column value is NULL.
+ */
+int spring_column_text_hl(const SpringRowHL *row, uint16_t i_col, char *out, int out_len);
+
+/**
  * Get a bool column.
  *
  * # Parameters
@@ -267,6 +427,25 @@ int spring_column_text(const SpringRow *row, uint16_t i_col, char *out, int out_
 enum SpringErrno spring_column_bool(const SpringRow *row, uint16_t i_col, bool *out);
 
 /**
+ * Get a bool column.
+ *
+ * # Parameters
+ *
+ * - `row`: A `SpringRow` pointer to get a column value from.
+ * - `i_col`: The column index to get a value from.
+ * - `out`: A pointer to a buffer to store the column value.
+ *
+ * # Returns
+ *
+ * - `Ok`: On success.
+ * - `Unavailable`:
+ *   - Column pointed by `i_col` is already fetched.
+ *   - `i_col` is out of range.
+ * - `CNull`: Column value is NULL.
+ */
+enum SpringErrno spring_column_bool_hl(const SpringRowHL *row, uint16_t i_col, bool *out);
+
+/**
  * Get a 4-byte floating point column.
  *
  * # Parameters
@@ -284,6 +463,25 @@ enum SpringErrno spring_column_bool(const SpringRow *row, uint16_t i_col, bool *
  * - `CNull`: Column value is NULL.
  */
 enum SpringErrno spring_column_float(const SpringRow *row, uint16_t i_col, float *out);
+
+/**
+ * Get a 4-byte floating point column.
+ *
+ * # Parameters
+ *
+ * - `row`: A `SpringRow` pointer to get a column value from.
+ * - `i_col`: The column index to get a value from.
+ * - `out`: A pointer to a buffer to store the column value.
+ *
+ * # Returns
+ *
+ * - `Ok`: On success.
+ * - `Unavailable`:
+ *   - Column pointed by `i_col` is already fetched.
+ *   - `i_col` is out of range.
+ * - `CNull`: Column value is NULL.
+ */
+enum SpringErrno spring_column_float_hl(const SpringRowHL *row, uint16_t i_col, float *out);
 
 /**
  * Write the most recent error number into `errno` and message into a caller-provided buffer as a UTF-8
