@@ -13,6 +13,10 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+### Refactor
+
+- Rewrite with using SpringQL High Level APIs. ([#36](https://github.com/SpringQL/SpringQL-client-c/pull/36))
+
 ## [v0.9.0+2]
 
 Depends on springql-core v0.9.0.
