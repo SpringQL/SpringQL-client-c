@@ -1,4 +1,4 @@
-use ::springql_core::api::high_level_rs::SpringPipelineHL;
+use ::springql_core::api::SpringPipelineHL;
 
 use std::{ffi::c_void, mem};
 /// Pipeline (dataflow definition) in SpringQL.

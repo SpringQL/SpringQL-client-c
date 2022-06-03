@@ -1,4 +1,4 @@
-use ::springql_core::api::high_level_rs::SpringRowHL;
+use ::springql_core::api::SpringRowHL;
 
 use std::{ffi::c_void, mem};
 /// Row object from an in memory queue.
