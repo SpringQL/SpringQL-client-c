@@ -4,6 +4,13 @@
 
 #![allow(clippy::missing_safety_doc)] // C header file does not need `Safety` section
 
+mod conf;
+pub(crate) mod cstr;
+mod pipe_ptr;
+mod row_ptr;
+pub mod spring_errno;
+pub mod spring_last_err;
+
 use std::{
     ffi::CStr,
     os::raw::{c_char, c_float, c_int, c_long, c_short},
@@ -11,111 +18,15 @@ use std::{
     ptr,
 };
 
-use ::springql_core::error::SpringError;
-use cstr::strcpy;
-use spring_last_err::{update_last_error, LastError};
-
-use springql_core::high_level_rs as hl_api;
-
-use spring_errno::SpringErrno;
-
-pub mod spring_errno;
-pub mod spring_last_err;
-
-pub(crate) mod cstr;
-
-mod conf {
-    use springql_core::low_level_rs as ll_api;
-    use std::{ffi::c_void, mem};
-    /// Configuration.
-    #[non_exhaustive]
-    #[repr(transparent)]
-    pub struct SpringConfig(*mut c_void);
-
-    impl SpringConfig {
-        pub fn new(config: ll_api::SpringConfig) -> Self {
-            SpringConfig(unsafe { mem::transmute(Box::new(config)) })
-        }
-
-        pub fn llconf(&self) -> &ll_api::SpringConfig {
-            unsafe { &*(self.0 as *const ll_api::SpringConfig) }
-        }
-
-        pub fn drop(ptr: *mut SpringConfig) {
-            let outer = unsafe { Box::from_raw(ptr) };
-            let inner = unsafe { Box::from_raw(outer.0) };
-            drop(inner);
-            drop(outer);
-        }
-
-        pub fn into_ptr(self) -> *mut SpringConfig {
-            Box::into_raw(Box::new(self))
-        }
-    }
-}
-use conf::SpringConfig;
-mod pipe_ptr {
-    use springql_core::high_level_rs::SpringPipelineHL;
-
-    use std::{ffi::c_void, mem};
-    /// Pipeline (dataflow definition) in SpringQL.
-    #[non_exhaustive]
-    #[repr(transparent)]
-    pub struct SpringPipeline(*mut c_void);
-
-    impl SpringPipeline {
-        pub fn new(pipe: SpringPipelineHL) -> Self {
-            SpringPipeline(unsafe { mem::transmute(Box::new(pipe)) })
-        }
-
-        pub fn pipe(&self) -> &SpringPipelineHL {
-            unsafe { &*(self.0 as *const SpringPipelineHL) }
-        }
-
-        pub fn drop(ptr: *mut SpringPipeline) {
-            let outer = unsafe { Box::from_raw(ptr) };
-            let inner = unsafe { Box::from_raw(outer.0) };
-            drop(inner);
-            drop(outer);
-        }
-
-        pub fn into_ptr(self) -> *mut SpringPipeline {
-            Box::into_raw(Box::new(self))
-        }
-    }
-}
-use pipe_ptr::SpringPipeline;
-mod row_ptr {
-    use springql_core::high_level_rs::SpringRowHL;
-
-    use std::{ffi::c_void, mem};
-    /// Row object from an in memory queue.
-    #[non_exhaustive]
-    #[repr(transparent)]
-    pub struct SpringRow(*mut c_void);
-
-    impl SpringRow {
-        pub fn new(pipe: SpringRowHL) -> Self {
-            SpringRow(unsafe { mem::transmute(Box::new(pipe)) })
-        }
-
-        pub fn row(&self) -> &SpringRowHL {
-            unsafe { &*(self.0 as *const SpringRowHL) }
-        }
-
-        pub fn drop(ptr: *mut SpringRow) {
-            let outer = unsafe { Box::from_raw(ptr) };
-            let inner = unsafe { Box::from_raw(outer.0) };
-            drop(inner);
-            drop(outer);
-        }
-
-        pub fn into_ptr(self) -> *mut SpringRow {
-            Box::into_raw(Box::new(self))
-        }
-    }
-}
-use row_ptr::SpringRow;
+use crate::{
+    conf::SpringConfig,
+    cstr::strcpy,
+    pipe_ptr::SpringPipeline,
+    row_ptr::SpringRow,
+    spring_errno::SpringErrno,
+    spring_last_err::{update_last_error, LastError},
+};
+use ::springql_core::api::{error::SpringError, high_level_rs as hl_api};
 
 /// Returns default configuration.
 ///
@@ -123,7 +34,7 @@ use row_ptr::SpringRow;
 /// If you would like to change the default configuration, use `spring_config_toml()` instead.
 #[no_mangle]
 pub extern "C" fn spring_config_default() -> *mut SpringConfig {
-    let config = springql_core::low_level_rs::spring_config_default();
+    let config = ::springql_core::api::low_level_rs::spring_config_default();
     SpringConfig::new(config).into_ptr()
 }
 
@@ -149,8 +60,8 @@ pub unsafe extern "C" fn spring_config_toml(
     let s = CStr::from_ptr(overwrite_config_toml);
     let s = s.to_str().expect("failed to parse TOML string into UTF-8");
 
-    let config =
-        springql_core::low_level_rs::spring_config_toml(s).expect("failed to parse TOML config");
+    let config = springql_core::api::low_level_rs::spring_config_toml(s)
+        .expect("failed to parse TOML config");
     SpringConfig::new(config).into_ptr()
 }
 
