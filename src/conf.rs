@@ -1,4 +1,4 @@
-use ::springql_core::api::low_level_rs as ll_api;
+use ::springql_core::api::SpringConfig as RawSpringConfig;
 use std::{ffi::c_void, mem};
 /// Configuration.
 #[non_exhaustive]
@@ -6,12 +6,12 @@ use std::{ffi::c_void, mem};
 pub struct SpringConfig(*mut c_void);
 
 impl SpringConfig {
-    pub fn new(config: ll_api::SpringConfig) -> Self {
+    pub fn new(config: RawSpringConfig) -> Self {
         SpringConfig(unsafe { mem::transmute(Box::new(config)) })
     }
 
-    pub fn llconf(&self) -> &ll_api::SpringConfig {
-        unsafe { &*(self.0 as *const ll_api::SpringConfig) }
+    pub fn llconf(&self) -> &RawSpringConfig {
+        unsafe { &*(self.0 as *const RawSpringConfig) }
     }
 
     pub fn drop(ptr: *mut SpringConfig) {

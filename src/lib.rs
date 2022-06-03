@@ -34,7 +34,7 @@ use ::springql_core::api::{error::SpringError, SpringPipelineHL};
 /// If you would like to change the default configuration, use `spring_config_toml()` instead.
 #[no_mangle]
 pub extern "C" fn spring_config_default() -> *mut SpringConfig {
-    let config = ::springql_core::api::low_level_rs::spring_config_default();
+    let config = ::springql_core::api::spring_config_default();
     SpringConfig::new(config).into_ptr()
 }
 
@@ -60,8 +60,7 @@ pub unsafe extern "C" fn spring_config_toml(
     let s = CStr::from_ptr(overwrite_config_toml);
     let s = s.to_str().expect("failed to parse TOML string into UTF-8");
 
-    let config = springql_core::api::low_level_rs::spring_config_toml(s)
-        .expect("failed to parse TOML config");
+    let config = springql_core::api::spring_config_toml(s).expect("failed to parse TOML config");
     SpringConfig::new(config).into_ptr()
 }
 
