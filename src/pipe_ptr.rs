@@ -1,4 +1,4 @@
-use ::springql_core::api::SpringPipelineHL;
+use ::springql_core::api::SpringPipeline as Pipeline;
 
 use std::{ffi::c_void, mem};
 /// Pipeline (dataflow definition) in SpringQL.
@@ -7,12 +7,12 @@ use std::{ffi::c_void, mem};
 pub struct SpringPipeline(*mut c_void);
 
 impl SpringPipeline {
-    pub fn new(pipe: SpringPipelineHL) -> Self {
+    pub fn new(pipe: Pipeline) -> Self {
         SpringPipeline(unsafe { mem::transmute(Box::new(pipe)) })
     }
 
-    pub fn pipe(&self) -> &SpringPipelineHL {
-        unsafe { &*(self.0 as *const SpringPipelineHL) }
+    pub fn pipe(&self) -> &Pipeline {
+        unsafe { &*(self.0 as *const Pipeline) }
     }
 
     pub fn drop(ptr: *mut SpringPipeline) {

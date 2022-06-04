@@ -26,7 +26,7 @@ use crate::{
     spring_errno::SpringErrno,
     spring_last_err::{update_last_error, LastError},
 };
-use ::springql_core::api::{error::SpringError, SpringPipelineHL};
+use ::springql_core::api::{error::SpringError, SpringPipeline as Pipeline};
 
 /// Returns default configuration.
 ///
@@ -93,7 +93,7 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
 #[no_mangle]
 pub unsafe extern "C" fn spring_open(config: *const SpringConfig) -> *mut SpringPipeline {
     let config = (*config).llconf();
-    let pipeline = SpringPipelineHL::new(config);
+    let pipeline = Pipeline::new(config);
     match pipeline {
         Ok(pipe) => {
             let ptr = SpringPipeline::new(pipe);

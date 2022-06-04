@@ -1,4 +1,4 @@
-use ::springql_core::api::SpringRowHL;
+use ::springql_core::api::SpringRow as Row;
 
 use std::{ffi::c_void, mem};
 /// Row object from an in memory queue.
@@ -7,12 +7,12 @@ use std::{ffi::c_void, mem};
 pub struct SpringRow(*mut c_void);
 
 impl SpringRow {
-    pub fn new(pipe: SpringRowHL) -> Self {
+    pub fn new(pipe: Row) -> Self {
         SpringRow(unsafe { mem::transmute(Box::new(pipe)) })
     }
 
-    pub fn row(&self) -> &SpringRowHL {
-        unsafe { &*(self.0 as *const SpringRowHL) }
+    pub fn row(&self) -> &Row {
+        unsafe { &*(self.0 as *const Row) }
     }
 
     pub fn drop(ptr: *mut SpringRow) {
