@@ -355,8 +355,8 @@ pub unsafe extern "C" fn spring_column_text(
         with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
         Ok(v) => {
-            strcpy(&v, out, out_len);
-            v.len() as c_int
+            let v_len = strcpy(&v, out, out_len);
+            v_len as c_int
         }
         Err(e) => e as c_int,
     }
