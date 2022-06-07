@@ -4,12 +4,12 @@
 
 #![allow(clippy::missing_safety_doc)] // C header file does not need `Safety` section
 
-mod conf;
 pub(crate) mod cstr;
-mod pipe_ptr;
-mod row_ptr;
+mod spring_config;
 pub mod spring_errno;
 pub mod spring_last_err;
+mod spring_pipeline;
+mod spring_row;
 
 use std::{
     ffi::CStr,
@@ -19,12 +19,12 @@ use std::{
 };
 
 use crate::{
-    conf::SpringConfig,
     cstr::strcpy,
-    pipe_ptr::SpringPipeline,
-    row_ptr::SpringRow,
+    spring_config::SpringConfig,
     spring_errno::SpringErrno,
     spring_last_err::{update_last_error, LastError},
+    spring_pipeline::SpringPipeline,
+    spring_row::SpringRow,
 };
 use ::springql_core::api::{error::SpringError, SpringPipeline as Pipeline};
 
@@ -92,7 +92,7 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
 /// No errors are expected currently.
 #[no_mangle]
 pub unsafe extern "C" fn spring_open(config: *const SpringConfig) -> *mut SpringPipeline {
-    let config = (*config).llconf();
+    let config = (*config).as_config();
     let pipeline = Pipeline::new(config);
     match pipeline {
         Ok(pipe) => {
@@ -135,7 +135,7 @@ pub unsafe extern "C" fn spring_command(
     pipeline: *const SpringPipeline,
     sql: *const c_char,
 ) -> SpringErrno {
-    let pipe = (*pipeline).pipe();
+    let pipe = (*pipeline).as_pipeline();
     let sql = CStr::from_ptr(sql).to_string_lossy().into_owned();
     let result = with_catch(|| pipe.command(sql));
 
@@ -164,9 +164,9 @@ pub unsafe extern "C" fn spring_pop(
     pipeline: *const SpringPipeline,
     queue: *const c_char,
 ) -> *mut SpringRow {
-    let pipe = (*pipeline).pipe();
+    let pipeline = (*pipeline).as_pipeline();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
-    let result = with_catch(|| pipe.pop(&queue));
+    let result = with_catch(|| pipeline.pop(&queue));
     match result {
         Ok(row) => {
             let row = SpringRow::new(row);
@@ -192,12 +192,13 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
     queue: *const c_char,
     is_err: *mut bool,
 ) -> *mut SpringRow {
-    let pipe = (*pipeline).pipe();
+    let pipeline = (*pipeline).as_pipeline();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
-    let result = with_catch(|| pipe.pop_non_blocking(&queue));
+    let result = with_catch(|| pipeline.pop_non_blocking(&queue));
     match result {
         Ok(Some(row)) => {
             let ptr = SpringRow::new(row);
+            *is_err = false;
             ptr.into_ptr()
         }
         Ok(None) => {
@@ -248,7 +249,7 @@ pub unsafe extern "C" fn spring_column_short(
     i_col: u16,
     out: *mut c_short,
 ) -> SpringErrno {
-    let row = (*row).row();
+    let row = (*row).as_row();
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -281,7 +282,7 @@ pub unsafe extern "C" fn spring_column_int(
     i_col: u16,
     out: *mut c_int,
 ) -> SpringErrno {
-    let row = (*row).row();
+    let row = (*row).as_row();
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -314,7 +315,7 @@ pub unsafe extern "C" fn spring_column_long(
     i_col: u16,
     out: *mut c_long,
 ) -> SpringErrno {
-    let row = (*row).row();
+    let row = (*row).as_row();
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -349,7 +350,7 @@ pub unsafe extern "C" fn spring_column_text(
     out: *mut c_char,
     out_len: c_int,
 ) -> c_int {
-    let row = (*row).row();
+    let row = (*row).as_row();
     let i_col = i_col as usize;
     let result: Result<String, SpringErrno> =
         with_catch(|| row.get_not_null_by_index(i_col as usize));
@@ -383,7 +384,7 @@ pub unsafe extern "C" fn spring_column_bool(
     i_col: u16,
     out: *mut bool,
 ) -> SpringErrno {
-    let row = (*row).row();
+    let row = (*row).as_row();
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -416,7 +417,7 @@ pub unsafe extern "C" fn spring_column_float(
     i_col: u16,
     out: *mut c_float,
 ) -> SpringErrno {
-    let row = (*row).row();
+    let row = (*row).as_row();
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {

@@ -1,3 +1,5 @@
+// This file is part of https://github.com/SpringQL/SpringQL-client-c which is licensed under MIT OR Apache-2.0. See file LICENSE-MIT or LICENSE-APACHE for full license details.
+
 use ::springql_core::api::SpringRow as Row;
 
 use std::{ffi::c_void, mem};
@@ -11,7 +13,7 @@ impl SpringRow {
         SpringRow(unsafe { mem::transmute(Box::new(pipe)) })
     }
 
-    pub fn row(&self) -> &Row {
+    pub fn as_row(&self) -> &Row {
         unsafe { &*(self.0 as *const Row) }
     }
 

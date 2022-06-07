@@ -1,3 +1,4 @@
+// This file is part of https://github.com/SpringQL/SpringQL-client-c which is licensed under MIT OR Apache-2.0. See file LICENSE-MIT or LICENSE-APACHE for full license details.
 use ::springql_core::api::SpringConfig as RawSpringConfig;
 use std::{ffi::c_void, mem};
 /// Configuration.
@@ -10,7 +11,7 @@ impl SpringConfig {
         SpringConfig(unsafe { mem::transmute(Box::new(config)) })
     }
 
-    pub fn llconf(&self) -> &RawSpringConfig {
+    pub fn as_config(&self) -> &RawSpringConfig {
         unsafe { &*(self.0 as *const RawSpringConfig) }
     }
 
