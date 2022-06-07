@@ -169,8 +169,8 @@ pub unsafe extern "C" fn spring_pop(
     let result = with_catch(|| pipe.pop(&queue));
     match result {
         Ok(row) => {
-            let ptr = SpringRow::new(row);
-            ptr.into_ptr()
+            let row = SpringRow::new(row);
+            row.into_ptr()
         }
         Err(_) => ptr::null_mut(),
     }
