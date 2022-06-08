@@ -13,6 +13,8 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+## [v0.11.0]
+
 ### For developers
 
 - Rewrite with using springql-core's new APIs. ([#36](https://github.com/SpringQL/SpringQL-client-c/pull/36))
@@ -46,8 +48,9 @@ Depends on springql-core v0.7.1.
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
-[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.9.0+2...HEAD
+[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.11.0...HEAD
 [Released]: https://github.com/SpringQL/SpringQL-client-c/releases
+[v0.11.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.9.0+2...v0.11.0
 [v0.9.0+2]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.9.0...v0.9.0+2
 [v0.9.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.8.0...v0.9.0
 [v0.8.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.7.1...v0.8.0

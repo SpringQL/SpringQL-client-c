@@ -413,7 +413,7 @@ pub unsafe extern "C" fn spring_column_bool(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_float(
-    row: *const SpringRow,
+row: *const SpringRow,
     i_col: u16,
     out: *mut c_float,
 ) -> SpringErrno {

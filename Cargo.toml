@@ -1,6 +1,6 @@
 [package]
 name = "springql-client-c"
-version = "0.9.0+2"
+version = "0.11.0"
 
 authors = ["Sho Nakatani <lay.sakura@gmail.com>"]
 license = "MIT OR Apache-2.0"
