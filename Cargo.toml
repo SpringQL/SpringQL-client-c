@@ -15,6 +15,6 @@ name = "springql_client"
 cbindgen = "0.23"
 
 [dependencies]
-springql-core = { git="https://github.com/SpringQL/SpringQL.git", branch="refactor_api_2"}
+springql-core = "0.11.0"
 
 log = "0.4"
