@@ -8,8 +8,8 @@ use std::{
     os::raw::{c_char, c_int},
 };
 
-use log::{info, warn};
-use springql_core::error::SpringError;
+use ::log::{info, warn};
+use ::springql_core::api::error::SpringError;
 
 use crate::{cstr::strcpy, spring_errno::SpringErrno};
 

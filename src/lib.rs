@@ -4,41 +4,29 @@
 
 #![allow(clippy::missing_safety_doc)] // C header file does not need `Safety` section
 
+pub(crate) mod cstr;
+mod spring_config;
+pub mod spring_errno;
+pub mod spring_last_err;
+mod spring_pipeline;
+mod spring_row;
+
 use std::{
-    convert::identity,
-    ffi::{c_void, CStr},
-    mem,
+    ffi::CStr,
     os::raw::{c_char, c_float, c_int, c_long, c_short},
     panic::{catch_unwind, UnwindSafe},
     ptr,
 };
 
-use ::springql_core::error::SpringError;
-use cstr::strcpy;
-use spring_last_err::{update_last_error, LastError};
-use springql_core::low_level_rs as springql_core;
-
-use spring_errno::SpringErrno;
-
-pub mod spring_errno;
-pub mod spring_last_err;
-
-pub(crate) mod cstr;
-
-/// Configuration.
-#[non_exhaustive]
-#[repr(transparent)]
-pub struct SpringConfig(*mut c_void);
-
-/// Pipeline (dataflow definition) in SpringQL.
-#[non_exhaustive]
-#[repr(transparent)]
-pub struct SpringPipeline(*mut c_void);
-
-/// Row object from an in memory queue.
-#[non_exhaustive]
-#[repr(transparent)]
-pub struct SpringRow(*mut c_void);
+use crate::{
+    cstr::strcpy,
+    spring_config::SpringConfig,
+    spring_errno::SpringErrno,
+    spring_last_err::{update_last_error, LastError},
+    spring_pipeline::SpringPipeline,
+    spring_row::SpringRow,
+};
+use ::springql_core::api::{error::SpringError, SpringPipeline as Pipeline};
 
 /// Returns default configuration.
 ///
@@ -46,10 +34,8 @@ pub struct SpringRow(*mut c_void);
 /// If you would like to change the default configuration, use `spring_config_toml()` instead.
 #[no_mangle]
 pub extern "C" fn spring_config_default() -> *mut SpringConfig {
-    let config = springql_core::spring_config_default();
-    Box::into_raw(Box::new(SpringConfig(unsafe {
-        mem::transmute(Box::new(config))
-    })))
+    let config = ::springql_core::api::spring_config_default();
+    SpringConfig::new(config).into_ptr()
 }
 
 /// Configuration by TOML format string.
@@ -64,18 +50,18 @@ pub extern "C" fn spring_config_default() -> *mut SpringConfig {
 /// # Panics
 ///
 /// Currently, the process aborts when:
-/// 
+///
 /// - `overwrite_config_toml` includes invalid key and/or value.
 /// - `overwrite_config_toml` is not valid as TOML.
 #[no_mangle]
 pub unsafe extern "C" fn spring_config_toml(
     overwrite_config_toml: *const c_char,
 ) -> *mut SpringConfig {
-    let s = { CStr::from_ptr(overwrite_config_toml) };
+    let s = CStr::from_ptr(overwrite_config_toml);
     let s = s.to_str().expect("failed to parse TOML string into UTF-8");
 
-    let config = springql_core::spring_config_toml(s).expect("failed to parse TOML config");
-    Box::into_raw(Box::new(SpringConfig(mem::transmute(Box::new(config)))))
+    let config = springql_core::api::SpringConfig::new(s).expect("failed to parse TOML config");
+    SpringConfig::new(config).into_ptr()
 }
 
 /// Frees heap occupied by a `SpringConfig`.
@@ -89,10 +75,7 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
     if config.is_null() {
         SpringErrno::CNull
     } else {
-        let outer = Box::from_raw(config);
-        let inner = Box::from_raw(outer.0);
-        drop(inner);
-        drop(outer);
+        SpringConfig::drop(config);
         SpringErrno::Ok
     }
 }
@@ -109,12 +92,15 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
 /// No errors are expected currently.
 #[no_mangle]
 pub unsafe extern "C" fn spring_open(config: *const SpringConfig) -> *mut SpringPipeline {
-    let config = &*((*config).0 as *const springql_core::SpringConfig);
-
-    with_catch(|| springql_core::spring_open(config)).map_or_else(
-        |_| ptr::null_mut(),
-        |pipeline| Box::into_raw(Box::new(SpringPipeline(mem::transmute(Box::new(pipeline))))),
-    )
+    let config = (*config).as_config();
+    let pipeline = Pipeline::new(config);
+    match pipeline {
+        Ok(pipe) => {
+            let ptr = SpringPipeline::new(pipe);
+            ptr.into_ptr()
+        }
+        Err(_err) => ptr::null_mut(),
+    }
 }
 
 /// Frees heap occupied by a `SpringPipeline`.
@@ -128,10 +114,7 @@ pub unsafe extern "C" fn spring_close(pipeline: *mut SpringPipeline) -> SpringEr
     if pipeline.is_null() {
         SpringErrno::CNull
     } else {
-        let outer = Box::from_raw(pipeline);
-        let inner = Box::from_raw(outer.0);
-        drop(inner);
-        drop(outer);
+        SpringPipeline::drop(pipeline);
         SpringErrno::Ok
     }
 }
@@ -152,11 +135,14 @@ pub unsafe extern "C" fn spring_command(
     pipeline: *const SpringPipeline,
     sql: *const c_char,
 ) -> SpringErrno {
-    let pipeline = &*((*pipeline).0 as *const springql_core::SpringPipeline);
+    let pipe = (*pipeline).as_pipeline();
     let sql = CStr::from_ptr(sql).to_string_lossy().into_owned();
+    let result = with_catch(|| pipe.command(sql));
 
-    with_catch(|| springql_core::spring_command(pipeline, &sql))
-        .map_or_else(identity, |()| SpringErrno::Ok)
+    match result {
+        Ok(_) => SpringErrno::Ok,
+        Err(e) => e,
+    }
 }
 
 /// Pop a row from an in memory queue. This is a blocking function.
@@ -178,13 +164,16 @@ pub unsafe extern "C" fn spring_pop(
     pipeline: *const SpringPipeline,
     queue: *const c_char,
 ) -> *mut SpringRow {
-    let pipeline = &*((*pipeline).0 as *const springql_core::SpringPipeline);
+    let pipeline = (*pipeline).as_pipeline();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
-
-    with_catch(|| springql_core::spring_pop(pipeline, &queue)).map_or_else(
-        |_| ptr::null_mut(),
-        |row| Box::into_raw(Box::new(SpringRow(mem::transmute(Box::new(row))))),
-    )
+    let result = with_catch(|| pipeline.pop(&queue));
+    match result {
+        Ok(row) => {
+            let row = SpringRow::new(row);
+            row.into_ptr()
+        }
+        Err(_) => ptr::null_mut(),
+    }
 }
 
 /// Pop a row from an in memory queue. This is a non-blocking function.
@@ -203,24 +192,24 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
     queue: *const c_char,
     is_err: *mut bool,
 ) -> *mut SpringRow {
-    *is_err = false;
-
-    let pipeline = &*((*pipeline).0 as *const springql_core::SpringPipeline);
+    let pipeline = (*pipeline).as_pipeline();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
-
-    with_catch(|| springql_core::spring_pop_non_blocking(pipeline, &queue)).map_or_else(
-        |_| {
+    let result = with_catch(|| pipeline.pop_non_blocking(&queue));
+    match result {
+        Ok(Some(row)) => {
+            let ptr = SpringRow::new(row);
+            *is_err = false;
+            ptr.into_ptr()
+        }
+        Ok(None) => {
+            *is_err = false;
+            ptr::null_mut()
+        }
+        Err(_) => {
             *is_err = true;
             ptr::null_mut()
-        },
-        |opt_row| {
-            if let Some(row) = opt_row {
-                Box::into_raw(Box::new(SpringRow(mem::transmute(Box::new(row)))))
-            } else {
-                ptr::null_mut()
-            }
-        },
-    )
+        }
+    }
 }
 
 /// Frees heap occupied by a `SpringRow`.
@@ -230,14 +219,11 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
 /// - `Ok`: on success.
 /// - `CNull`: `pipeline` is a NULL pointer.
 #[no_mangle]
-pub unsafe extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
+pub extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
     if row.is_null() {
         SpringErrno::CNull
     } else {
-        let outer = Box::from_raw(row);
-        let inner = Box::from_raw(outer.0);
-        drop(inner);
-        drop(outer);
+        SpringRow::drop(row);
         SpringErrno::Ok
     }
 }
@@ -245,7 +231,7 @@ pub unsafe extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
 /// Get a 2-byte integer column.
 ///
 /// # Parameters
-/// 
+///
 /// - `row`: A `SpringRow` pointer to get a column value from.
 /// - `i_col`: The column index to get a value from.
 /// - `out`: A pointer to a buffer to store the column value.
@@ -263,19 +249,22 @@ pub unsafe extern "C" fn spring_column_short(
     i_col: u16,
     out: *mut c_short,
 ) -> SpringErrno {
-    let row = &*((*row).0 as *const springql_core::SpringRow);
+    let row = (*row).as_row();
     let i_col = i_col as usize;
-
-    with_catch(|| springql_core::spring_column_i16(row, i_col)).map_or_else(identity, |r| {
-        *out = r;
-        SpringErrno::Ok
-    })
+    let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
+    match result {
+        Ok(v) => {
+            *out = v;
+            SpringErrno::Ok
+        }
+        Err(e) => e,
+    }
 }
 
 /// Get a 4-byte integer column.
 ///
 /// # Parameters
-/// 
+///
 /// - `row`: A `SpringRow` pointer to get a column value from.
 /// - `i_col`: The column index to get a value from.
 /// - `out`: A pointer to a buffer to store the column value.
@@ -293,23 +282,26 @@ pub unsafe extern "C" fn spring_column_int(
     i_col: u16,
     out: *mut c_int,
 ) -> SpringErrno {
-    let row = &*((*row).0 as *const springql_core::SpringRow);
+    let row = (*row).as_row();
     let i_col = i_col as usize;
-
-    with_catch(|| springql_core::spring_column_i32(row, i_col)).map_or_else(identity, |r| {
-        *out = r;
-        SpringErrno::Ok
-    })
+    let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
+    match result {
+        Ok(v) => {
+            *out = v;
+            SpringErrno::Ok
+        }
+        Err(e) => e,
+    }
 }
 
 /// Get an 8-byte integer column.
 ///
 /// # Parameters
-/// 
+///
 /// - `row`: A `SpringRow` pointer to get a column value from.
 /// - `i_col`: The column index to get a value from.
 /// - `out`: A pointer to a buffer to store the column value.
-/// 
+///
 /// # Returns
 ///
 /// - `Ok`: On success.
@@ -323,24 +315,27 @@ pub unsafe extern "C" fn spring_column_long(
     i_col: u16,
     out: *mut c_long,
 ) -> SpringErrno {
-    let row = &*((*row).0 as *const springql_core::SpringRow);
+    let row = (*row).as_row();
     let i_col = i_col as usize;
-
-    with_catch(|| springql_core::spring_column_i64(row, i_col)).map_or_else(identity, |r| {
-        *out = r;
-        SpringErrno::Ok
-    })
+    let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
+    match result {
+        Ok(v) => {
+            *out = v;
+            SpringErrno::Ok
+        }
+        Err(e) => e,
+    }
 }
 
 /// Get a text column.
 ///
 /// # Parameters
-/// 
+///
 /// - `row`: A `SpringRow` pointer to get a column value from.
 /// - `i_col`: The column index to get a value from.
 /// - `out`: A pointer to a buffer to store the column value.
 /// - `out_len`: The length of the buffer pointed by `out`.
-/// 
+///
 /// # Returns
 ///
 /// - `> 0`: Length of the text.
@@ -355,21 +350,27 @@ pub unsafe extern "C" fn spring_column_text(
     out: *mut c_char,
     out_len: c_int,
 ) -> c_int {
-    let row = &*((*row).0 as *const springql_core::SpringRow);
+    let row = (*row).as_row();
     let i_col = i_col as usize;
-
-    with_catch(|| springql_core::spring_column_text(row, i_col))
-        .map_or_else(|errno| errno as c_int, |text| strcpy(&text, out, out_len))
+    let result: Result<String, SpringErrno> =
+        with_catch(|| row.get_not_null_by_index(i_col as usize));
+    match result {
+        Ok(v) => {
+            let v_len = strcpy(&v, out, out_len);
+            v_len as c_int
+        }
+        Err(e) => e as c_int,
+    }
 }
 
 /// Get a bool column.
 ///
 /// # Parameters
-/// 
+///
 /// - `row`: A `SpringRow` pointer to get a column value from.
 /// - `i_col`: The column index to get a value from.
 /// - `out`: A pointer to a buffer to store the column value.
-/// 
+///
 /// # Returns
 ///
 /// - `Ok`: On success.
@@ -383,23 +384,26 @@ pub unsafe extern "C" fn spring_column_bool(
     i_col: u16,
     out: *mut bool,
 ) -> SpringErrno {
-    let row = &*((*row).0 as *const springql_core::SpringRow);
+    let row = (*row).as_row();
     let i_col = i_col as usize;
-
-    with_catch(|| springql_core::spring_column_bool(row, i_col)).map_or_else(identity, |r| {
-        *out = r;
-        SpringErrno::Ok
-    })
+    let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
+    match result {
+        Ok(v) => {
+            *out = v;
+            SpringErrno::Ok
+        }
+        Err(e) => e,
+    }
 }
 
 /// Get a 4-byte floating point column.
 ///
 /// # Parameters
-/// 
+///
 /// - `row`: A `SpringRow` pointer to get a column value from.
 /// - `i_col`: The column index to get a value from.
 /// - `out`: A pointer to a buffer to store the column value.
-/// 
+///
 /// # Returns
 ///
 /// - `Ok`: On success.
@@ -413,13 +417,16 @@ pub unsafe extern "C" fn spring_column_float(
     i_col: u16,
     out: *mut c_float,
 ) -> SpringErrno {
-    let row = &*((*row).0 as *const springql_core::SpringRow);
+    let row = (*row).as_row();
     let i_col = i_col as usize;
-
-    with_catch(|| springql_core::spring_column_f32(row, i_col)).map_or_else(identity, |r| {
-        *out = r;
-        SpringErrno::Ok
-    })
+    let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
+    match result {
+        Ok(v) => {
+            *out = v;
+            SpringErrno::Ok
+        }
+        Err(e) => e,
+    }
 }
 
 fn with_catch<F, R>(f: F) -> Result<R, SpringErrno>

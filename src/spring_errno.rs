@@ -1,6 +1,6 @@
 // This file is part of https://github.com/SpringQL/SpringQL-client-c which is licensed under MIT OR Apache-2.0. See file LICENSE-MIT or LICENSE-APACHE for full license details.
 
-use springql_core::error::SpringError;
+use ::springql_core::api::error::SpringError;
 
 use crate::spring_last_err::LastError;
 
