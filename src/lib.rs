@@ -34,7 +34,7 @@ use ::springql_core::api::{error::SpringError, SpringPipeline as Pipeline};
 /// If you would like to change the default configuration, use `spring_config_toml()` instead.
 #[no_mangle]
 pub extern "C" fn spring_config_default() -> *mut SpringConfig {
-    let config = ::springql_core::api::spring_config_default();
+    let config = ::springql_core::api::SpringConfig::default();
     SpringConfig::new(config).into_ptr()
 }
 
@@ -413,7 +413,7 @@ pub unsafe extern "C" fn spring_column_bool(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_float(
-row: *const SpringRow,
+    row: *const SpringRow,
     i_col: u16,
     out: *mut c_float,
 ) -> SpringErrno {
