@@ -13,6 +13,10 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+### For developers
+
+- refactor: stop calling spring_config_default(). ([#43](https://github.com/SpringQL/SpringQL-client-c/pull/43))
+
 ## [v0.11.0]
 
 ### For developers
