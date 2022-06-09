@@ -1,6 +1,6 @@
 [package]
 name = "springql-client-c"
-version = "0.11.0"
+version = "0.12.0"
 
 authors = ["Sho Nakatani <lay.sakura@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -15,6 +15,6 @@ name = "springql_client"
 cbindgen = "0.23"
 
 [dependencies]
-springql-core = "0.11.0"
+springql-core = "0.12.0"
 
 log = "0.4"
