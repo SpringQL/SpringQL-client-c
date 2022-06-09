@@ -12,7 +12,7 @@ crate-type = ["cdylib"]
 name = "springql_client"
 
 [build-dependencies]
-cbindgen = "0.23"
+cbindgen = "0.24"
 
 [dependencies]
 springql-core = "0.12.0"
