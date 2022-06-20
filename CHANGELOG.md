@@ -13,6 +13,12 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+## [v0.13.0]
+
+### Added
+
+- `spring_column_blob()` and `spring_column_unsigned_int()`. ([#43](https://github.com/SpringQL/SpringQL-client-c/pull/43))
+
 ## [v0.12.0]
 
 ### For developers
