@@ -11,7 +11,7 @@ use std::{
 use ::log::{info, warn};
 use ::springql_core::api::error::SpringError;
 
-use crate::{cstr::strcpy, spring_errno::SpringErrno};
+use crate::{c_mem::strcpy, spring_errno::SpringErrno};
 
 thread_local! {
     static LAST_ERROR: RefCell<Option<LastError>> = RefCell::new(None);

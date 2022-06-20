@@ -4,7 +4,7 @@
 
 #![allow(clippy::missing_safety_doc)] // C header file does not need `Safety` section
 
-pub(crate) mod cstr;
+pub(crate) mod c_mem;
 mod spring_config;
 pub mod spring_errno;
 pub mod spring_last_err;
@@ -12,14 +12,14 @@ mod spring_pipeline;
 mod spring_row;
 
 use std::{
-    ffi::CStr,
-    os::raw::{c_char, c_float, c_int, c_long, c_short},
+    ffi::{c_void, CStr},
+    os::raw::{c_char, c_float, c_int, c_long, c_short, c_uint},
     panic::{catch_unwind, UnwindSafe},
     ptr,
 };
 
 use crate::{
-    cstr::strcpy,
+    c_mem::{memcpy, strcpy},
     spring_config::SpringConfig,
     spring_errno::SpringErrno,
     spring_last_err::{update_last_error, LastError},
@@ -327,6 +327,39 @@ pub unsafe extern "C" fn spring_column_long(
     }
 }
 
+/// Get a 4-byte unsigned integer column.
+///
+/// # Parameters
+///
+/// - `row`: A `SpringRow` pointer to get a column value from.
+/// - `i_col`: The column index to get a value from.
+/// - `out`: A pointer to a buffer to store the column value.
+///
+/// # Returns
+///
+/// - `Ok`: On success.
+/// - `Unavailable`:
+///   - Column pointed by `i_col` is already fetched.
+///   - `i_col` is out of range.
+/// - `CNull`: Column value is NULL.
+#[no_mangle]
+pub unsafe extern "C" fn spring_column_unsigned_int(
+    row: *const SpringRow,
+    i_col: u16,
+    out: *mut c_uint,
+) -> SpringErrno {
+    let row = (*row).as_row();
+    let i_col = i_col as usize;
+    let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
+    match result {
+        Ok(v) => {
+            *out = v;
+            SpringErrno::Ok
+        }
+        Err(e) => e,
+    }
+}
+
 /// Get a text column.
 ///
 /// # Parameters
@@ -357,6 +390,42 @@ pub unsafe extern "C" fn spring_column_text(
     match result {
         Ok(v) => {
             let v_len = strcpy(&v, out, out_len);
+            v_len as c_int
+        }
+        Err(e) => e as c_int,
+    }
+}
+
+/// Get a BLOB column.
+///
+/// # Parameters
+///
+/// - `row`: A `SpringRow` pointer to get a column value from.
+/// - `i_col`: The column index to get a value from.
+/// - `out`: A pointer to a buffer to store the column value.
+/// - `out_len`: The length of the buffer pointed by `out`.
+///
+/// # Returns
+///
+/// - `> 0`: Length of the text.
+/// - `Unavailable`:
+///   - Column pointed by `i_col` is already fetched.
+///   - `i_col` is out of range.
+/// - `CNull`: Column value is NULL.
+#[no_mangle]
+pub unsafe extern "C" fn spring_column_blob(
+    row: *const SpringRow,
+    i_col: u16,
+    out: *mut c_void,
+    out_len: c_int,
+) -> c_int {
+    let row = (*row).as_row();
+    let i_col = i_col as usize;
+    let result: Result<Vec<u8>, SpringErrno> =
+        with_catch(|| row.get_not_null_by_index(i_col as usize));
+    match result {
+        Ok(v) => {
+            let v_len = memcpy(&v, out, out_len);
             v_len as c_int
         }
         Err(e) => e as c_int,

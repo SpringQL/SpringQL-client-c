@@ -13,6 +13,13 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+## [v0.13.0]
+
+### Added
+
+- `spring_column_blob()` and `spring_column_unsigned_int()`. ([#45](https://github.com/SpringQL/SpringQL-client-c/pull/45))
+- `SpringErrno::Time` error number. ([#45](https://github.com/SpringQL/SpringQL-client-c/pull/45))
+
 ## [v0.12.0]
 
 ### For developers
@@ -54,8 +61,9 @@ Depends on springql-core v0.7.1.
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
-[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0...HEAD
 [Released]: https://github.com/SpringQL/SpringQL-client-c/releases
+[v0.13.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.12.0...v0.13.0
 [v0.12.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.11.0...v0.12.0
 [v0.11.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.9.0+2...v0.11.0
 [v0.9.0+2]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.9.0...v0.9.0+2
