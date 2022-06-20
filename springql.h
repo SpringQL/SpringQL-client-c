@@ -25,6 +25,7 @@ typedef enum SpringErrno {
   Sql = -10,
   InvalidConfig = -11,
   Null = -12,
+  Time = -13,
   /**
    * Insufficient buffer size
    */
@@ -228,6 +229,27 @@ enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *ou
 enum SpringErrno spring_column_long(const SpringRow *row, uint16_t i_col, long *out);
 
 /**
+ * Get a 4-byte unsigned integer column.
+ *
+ * # Parameters
+ *
+ * - `row`: A `SpringRow` pointer to get a column value from.
+ * - `i_col`: The column index to get a value from.
+ * - `out`: A pointer to a buffer to store the column value.
+ *
+ * # Returns
+ *
+ * - `Ok`: On success.
+ * - `Unavailable`:
+ *   - Column pointed by `i_col` is already fetched.
+ *   - `i_col` is out of range.
+ * - `CNull`: Column value is NULL.
+ */
+enum SpringErrno spring_column_unsigned_int(const SpringRow *row,
+                                            uint16_t i_col,
+                                            unsigned int *out);
+
+/**
  * Get a text column.
  *
  * # Parameters
@@ -246,6 +268,26 @@ enum SpringErrno spring_column_long(const SpringRow *row, uint16_t i_col, long *
  * - `CNull`: Column value is NULL.
  */
 int spring_column_text(const SpringRow *row, uint16_t i_col, char *out, int out_len);
+
+/**
+ * Get a BLOB column.
+ *
+ * # Parameters
+ *
+ * - `row`: A `SpringRow` pointer to get a column value from.
+ * - `i_col`: The column index to get a value from.
+ * - `out`: A pointer to a buffer to store the column value.
+ * - `out_len`: The length of the buffer pointed by `out`.
+ *
+ * # Returns
+ *
+ * - `> 0`: Length of the text.
+ * - `Unavailable`:
+ *   - Column pointed by `i_col` is already fetched.
+ *   - `i_col` is out of range.
+ * - `CNull`: Column value is NULL.
+ */
+int spring_column_blob(const SpringRow *row, uint16_t i_col, void *out, int out_len);
 
 /**
  * Get a bool column.

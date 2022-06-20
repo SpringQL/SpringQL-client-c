@@ -24,6 +24,7 @@ pub enum SpringErrno {
     Sql = -10,
     InvalidConfig = -11,
     Null = -12,
+    Time = -13,
 
     /// Insufficient buffer size
     CInsufficient = -126,
@@ -45,6 +46,7 @@ impl From<&SpringError> for SpringErrno {
             SpringError::Sql(_) => SpringErrno::Sql,
             SpringError::InvalidConfig { .. } => SpringErrno::InvalidConfig,
             SpringError::Null { .. } => SpringErrno::Null,
+            SpringError::Time(_) => SpringErrno::Time,
         }
     }
 }
