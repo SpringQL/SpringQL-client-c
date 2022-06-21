@@ -1,8 +1,9 @@
 // This file is part of https://github.com/SpringQL/SpringQL-client-c which is licensed under MIT OR Apache-2.0. See file LICENSE-MIT or LICENSE-APACHE for full license details.
 
 use std::{
+    ffi::c_void,
     os::raw::{c_char, c_int},
-    ptr, slice, ffi::c_void,
+    ptr, slice,
 };
 
 use log::warn;
@@ -15,6 +16,7 @@ use crate::spring_errno::SpringErrno;
 /// - `< 0`: SpringErrno
 pub(super) fn strcpy(src: &str, dest_buf: *mut c_char, dest_len: c_int) -> c_int {
     if src.len() >= dest_len as usize {
+        // `==` is not sufficient (dest needs null termination)
         warn!("dest_len is smaller than src.");
         warn!(
             "Expected at least {} bytes but got {}",
@@ -41,13 +43,9 @@ pub(super) fn strcpy(src: &str, dest_buf: *mut c_char, dest_len: c_int) -> c_int
 /// - `> 0`: the length of `src`.
 /// - `< 0`: SpringErrno
 pub(super) fn memcpy(src: &[u8], dest_buf: *mut c_void, dest_len: c_int) -> c_int {
-    if src.len() >= dest_len as usize {
+    if src.len() > dest_len as usize {
         warn!("dest_len is smaller than src.");
-        warn!(
-            "Expected at least {} bytes but got {}",
-            src.len() + 1,
-            dest_len
-        );
+        warn!("Expected at least {} bytes but got {}", src.len(), dest_len);
         return SpringErrno::CInsufficient as c_int;
     }
 
