@@ -17,13 +17,13 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 
 ### Fixed
 
-- `spring_column_blob()`'s `out_len` check. ([#46](https://github.com/SpringQL/SpringQL-client-c/pull/46))
+- `spring_column_blob()`'s `out_len` check. ([#47](https://github.com/SpringQL/SpringQL-client-c/pull/47))
 
 ## [v0.13.0+2]
 
 ### Added
 
-- add include guard to `springql.h`. ([#47](https://github.com/SpringQL/SpringQL-client-c/pull/47))
+- add include guard to `springql.h`. ([#46](https://github.com/SpringQL/SpringQL-client-c/pull/46))
 
 ## [v0.13.0]
 
