@@ -13,6 +13,12 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+## [v0.13.0+3]
+
+### Fixed
+
+- `spring_column_blob()`'s `out_len` check. ([#47](https://github.com/SpringQL/SpringQL-client-c/pull/47))
+
 ## [v0.13.0+2]
 
 ### Added
@@ -67,8 +73,10 @@ Depends on springql-core v0.7.1.
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
-[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0+3...HEAD
 [Released]: https://github.com/SpringQL/SpringQL-client-c/releases
+[v0.13.0+3]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0+2...v0.13.0+3
+[v0.13.0+2]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0...v0.13.0+2
 [v0.13.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.12.0...v0.13.0
 [v0.12.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.11.0...v0.12.0
 [v0.11.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.9.0+2...v0.11.0
