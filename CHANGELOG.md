@@ -13,6 +13,12 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+## [v0.13.0+2]
+
+### Added
+
+- add include guard to `springql.h`. ([#46](https://github.com/SpringQL/SpringQL-client-c/pull/46))
+
 ## [v0.13.0]
 
 ### Added

@@ -1,5 +1,8 @@
 // This file is part of https://github.com/SpringQL/SpringQL-client-c which is licensed under MIT OR Apache-2.0. See file LICENSE-MIT or LICENSE-APACHE for full license details.
 
+#ifndef _SPRINGQL_H_
+#define _SPRINGQL_H_
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -360,3 +363,5 @@ int spring_last_err(enum SpringErrno *errno,
  * - `> 0`: the length of the recent error message.
  */
 int spring_last_errmsg_len(void);
+
+#endif /* _SPRINGQL_H_ */
