@@ -13,6 +13,12 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+## [v0.13.0+4]
+
+### Fixed
+
+- `spring_column_blob()` mistakenly adds trailing null-termination to dest buffer. ([#48](https://github.com/SpringQL/SpringQL-client-c/pull/48))
+
 ## [v0.13.0+3]
 
 ### Fixed
@@ -73,8 +79,9 @@ Depends on springql-core v0.7.1.
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
-[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0+3...HEAD
+[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0+4...HEAD
 [Released]: https://github.com/SpringQL/SpringQL-client-c/releases
+[v0.13.0+4]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0+2...v0.13.0+4
 [v0.13.0+3]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0+2...v0.13.0+3
 [v0.13.0+2]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0...v0.13.0+2
 [v0.13.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.12.0...v0.13.0
