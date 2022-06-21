@@ -54,9 +54,5 @@ pub(super) fn memcpy(src: &[u8], dest_buf: *mut c_void, dest_len: c_int) -> c_in
         ptr::copy_nonoverlapping(src.as_ptr(), buffer.as_mut_ptr(), src.len());
     }
 
-    // Add a trailing null so people using the string as a `char *` don't
-    // accidentally read into garbage.
-    buffer[src.len()] = 0;
-
     src.len() as c_int
 }
