@@ -91,7 +91,7 @@ int main()
 
     fprintf(stderr, "waiting JSON records in tcp/54300...\n");
 
-    SpringRow *row;
+    SpringSinkRow *row;
     while (1)
     {
         row = spring_pop(pipeline, "q");
@@ -108,7 +108,7 @@ int main()
         assert_ok(ret);
 
         fprintf(stderr, "%s\t%f\n", ts, temperature_fahrenheit);
-        spring_row_close(row);
+        spring_sink_row_close(row);
     }
 
     ret = spring_close(pipeline);

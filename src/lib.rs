@@ -9,7 +9,8 @@ mod spring_config;
 pub mod spring_errno;
 pub mod spring_last_err;
 mod spring_pipeline;
-mod spring_row;
+mod spring_sink_row;
+mod spring_source_row;
 
 use std::{
     ffi::{c_void, CStr},
@@ -24,9 +25,10 @@ use crate::{
     spring_errno::SpringErrno,
     spring_last_err::{update_last_error, LastError},
     spring_pipeline::SpringPipeline,
-    spring_row::SpringRow,
+    spring_sink_row::SpringSinkRow,
+    spring_source_row::SpringSourceRow,
 };
-use ::springql_core::api::{error::SpringError, SpringPipeline as Pipeline};
+use ::springql::{error::SpringError, SpringPipeline as Pipeline};
 
 /// Returns default configuration.
 ///
@@ -34,7 +36,7 @@ use ::springql_core::api::{error::SpringError, SpringPipeline as Pipeline};
 /// If you would like to change the default configuration, use `spring_config_toml()` instead.
 #[no_mangle]
 pub extern "C" fn spring_config_default() -> *mut SpringConfig {
-    let config = ::springql_core::api::SpringConfig::default();
+    let config = ::springql::SpringConfig::default();
     SpringConfig::new(config).into_ptr()
 }
 
@@ -60,7 +62,7 @@ pub unsafe extern "C" fn spring_config_toml(
     let s = CStr::from_ptr(overwrite_config_toml);
     let s = s.to_str().expect("failed to parse TOML string into UTF-8");
 
-    let config = springql_core::api::SpringConfig::new(s).expect("failed to parse TOML config");
+    let config = springql::SpringConfig::new(s).expect("failed to parse TOML config");
     SpringConfig::new(config).into_ptr()
 }
 
@@ -163,13 +165,13 @@ pub unsafe extern "C" fn spring_command(
 pub unsafe extern "C" fn spring_pop(
     pipeline: *const SpringPipeline,
     queue: *const c_char,
-) -> *mut SpringRow {
+) -> *mut SpringSinkRow {
     let pipeline = (*pipeline).as_pipeline();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
     let result = with_catch(|| pipeline.pop(&queue));
     match result {
         Ok(row) => {
-            let row = SpringRow::new(row);
+            let row = SpringSinkRow::new(row);
             row.into_ptr()
         }
         Err(_) => ptr::null_mut(),
@@ -191,13 +193,13 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
     pipeline: *const SpringPipeline,
     queue: *const c_char,
     is_err: *mut bool,
-) -> *mut SpringRow {
+) -> *mut SpringSinkRow {
     let pipeline = (*pipeline).as_pipeline();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
     let result = with_catch(|| pipeline.pop_non_blocking(&queue));
     match result {
         Ok(Some(row)) => {
-            let ptr = SpringRow::new(row);
+            let ptr = SpringSinkRow::new(row);
             *is_err = false;
             ptr.into_ptr()
         }
@@ -212,18 +214,76 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
     }
 }
 
-/// Frees heap occupied by a `SpringRow`.
+/// Push a row into an in memory queue. This is a non-blocking function.
+///
+/// # Returns
+///
+/// - `Ok`: on success.
+/// - `Unavailable`: queue named `queue` does not exist.
+#[no_mangle]
+pub unsafe extern "C" fn spring_push(
+    pipeline: *const SpringPipeline,
+    queue: *const c_char,
+    row: *const SpringSourceRow,
+) -> SpringErrno {
+    let pipeline = (*pipeline).as_pipeline();
+    let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
+    let source_row = (*row).to_row();
+    let result = with_catch(|| pipeline.push(&queue, source_row));
+    match result {
+        Ok(()) => SpringErrno::Ok,
+        Err(e) => e,
+    }
+}
+
+/// Create a source row from JSON string
+///
+/// # Returns
+///
+/// - non-NULL: Successfully created a row.
+/// - NULL: Error occurred.
+///
+/// # Errors
+///
+/// - `InvalidFormat`: JSON string is invalid.
+#[no_mangle]
+pub unsafe extern "C" fn spring_source_row_from_json(json: *const c_char) -> *mut SpringSourceRow {
+    let json = CStr::from_ptr(json).to_string_lossy().into_owned();
+    let res_source_row = with_catch(|| ::springql::SpringSourceRow::from_json(&json));
+    match res_source_row {
+        Ok(source_row) => SpringSourceRow::new(source_row).into_ptr(),
+        Err(_) => ptr::null_mut(),
+    }
+}
+
+/// Frees heap occupied by a `SpringSourceRow`.
 ///
 /// # Returns
 ///
 /// - `Ok`: on success.
 /// - `CNull`: `pipeline` is a NULL pointer.
 #[no_mangle]
-pub extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
+pub extern "C" fn spring_source_row_close(row: *mut SpringSourceRow) -> SpringErrno {
     if row.is_null() {
         SpringErrno::CNull
     } else {
-        SpringRow::drop(row);
+        SpringSourceRow::drop(row);
+        SpringErrno::Ok
+    }
+}
+
+/// Frees heap occupied by a `SpringSinkRow`.
+///
+/// # Returns
+///
+/// - `Ok`: on success.
+/// - `CNull`: `pipeline` is a NULL pointer.
+#[no_mangle]
+pub extern "C" fn spring_sink_row_close(row: *mut SpringSinkRow) -> SpringErrno {
+    if row.is_null() {
+        SpringErrno::CNull
+    } else {
+        SpringSinkRow::drop(row);
         SpringErrno::Ok
     }
 }
@@ -245,7 +305,7 @@ pub extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_short(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_short,
 ) -> SpringErrno {
@@ -278,7 +338,7 @@ pub unsafe extern "C" fn spring_column_short(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_int(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_int,
 ) -> SpringErrno {
@@ -311,7 +371,7 @@ pub unsafe extern "C" fn spring_column_int(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_long(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_long,
 ) -> SpringErrno {
@@ -344,7 +404,7 @@ pub unsafe extern "C" fn spring_column_long(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_unsigned_int(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_uint,
 ) -> SpringErrno {
@@ -378,7 +438,7 @@ pub unsafe extern "C" fn spring_column_unsigned_int(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_text(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_char,
     out_len: c_int,
@@ -414,7 +474,7 @@ pub unsafe extern "C" fn spring_column_text(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_blob(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_void,
     out_len: c_int,
@@ -449,7 +509,7 @@ pub unsafe extern "C" fn spring_column_blob(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_bool(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut bool,
 ) -> SpringErrno {
@@ -482,7 +542,7 @@ pub unsafe extern "C" fn spring_column_bool(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_float(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_float,
 ) -> SpringErrno {

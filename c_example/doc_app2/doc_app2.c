@@ -137,7 +137,7 @@ int main()
 
     fprintf(stderr, "waiting JSON records in tcp/54300...\n");
 
-    SpringRow *row;
+    SpringSinkRow *row;
     bool is_err = false;
     while (1)
     {
@@ -159,7 +159,7 @@ int main()
                 assert_ok(ret);
 
                 fprintf(stderr, "[q_avg_all] %s\t%f\n", ts, avg_amount);
-                spring_row_close(row);
+                spring_sink_row_close(row);
             }
             else
             {
@@ -182,7 +182,7 @@ int main()
             assert_ok(ret);
 
             fprintf(stderr, "[q_avg_by_symbol] %s\t%s\t%f\n", ts, symbol, avg_amount);
-            spring_row_close(row);
+            spring_sink_row_close(row);
         }
         else
         {
