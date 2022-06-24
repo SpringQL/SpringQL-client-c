@@ -52,7 +52,7 @@ typedef void *SpringPipeline;
 /**
  * Row object from an in memory queue.
  */
-typedef void *SpringRow;
+typedef void *SpringSinkRow;
 
 /**
  * Returns default configuration.
@@ -146,7 +146,7 @@ enum SpringErrno spring_command(const SpringPipeline *pipeline, const char *sql)
  *
  * - `Unavailable`: queue named `queue` does not exist.
  */
-SpringRow *spring_pop(const SpringPipeline *pipeline, const char *queue);
+SpringSinkRow *spring_pop(const SpringPipeline *pipeline, const char *queue);
 
 /**
  * Pop a row from an in memory queue. This is a non-blocking function.
@@ -160,9 +160,9 @@ SpringRow *spring_pop(const SpringPipeline *pipeline, const char *queue);
  *
  * - `Unavailable`: queue named `queue` does not exist.
  */
-SpringRow *spring_pop_non_blocking(const SpringPipeline *pipeline,
-                                   const char *queue,
-                                   bool *is_err);
+SpringSinkRow *spring_pop_non_blocking(const SpringPipeline *pipeline,
+                                       const char *queue,
+                                       bool *is_err);
 
 /**
  * Frees heap occupied by a `SpringRow`.
@@ -172,7 +172,7 @@ SpringRow *spring_pop_non_blocking(const SpringPipeline *pipeline,
  * - `Ok`: on success.
  * - `CNull`: `pipeline` is a NULL pointer.
  */
-enum SpringErrno spring_row_close(SpringRow *row);
+enum SpringErrno spring_row_close(SpringSinkRow *row);
 
 /**
  * Get a 2-byte integer column.
@@ -191,7 +191,7 @@ enum SpringErrno spring_row_close(SpringRow *row);
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_short(const SpringRow *row, uint16_t i_col, short *out);
+enum SpringErrno spring_column_short(const SpringSinkRow *row, uint16_t i_col, short *out);
 
 /**
  * Get a 4-byte integer column.
@@ -210,7 +210,7 @@ enum SpringErrno spring_column_short(const SpringRow *row, uint16_t i_col, short
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *out);
+enum SpringErrno spring_column_int(const SpringSinkRow *row, uint16_t i_col, int *out);
 
 /**
  * Get an 8-byte integer column.
@@ -229,7 +229,7 @@ enum SpringErrno spring_column_int(const SpringRow *row, uint16_t i_col, int *ou
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_long(const SpringRow *row, uint16_t i_col, long *out);
+enum SpringErrno spring_column_long(const SpringSinkRow *row, uint16_t i_col, long *out);
 
 /**
  * Get a 4-byte unsigned integer column.
@@ -248,7 +248,7 @@ enum SpringErrno spring_column_long(const SpringRow *row, uint16_t i_col, long *
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_unsigned_int(const SpringRow *row,
+enum SpringErrno spring_column_unsigned_int(const SpringSinkRow *row,
                                             uint16_t i_col,
                                             unsigned int *out);
 
@@ -270,7 +270,7 @@ enum SpringErrno spring_column_unsigned_int(const SpringRow *row,
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-int spring_column_text(const SpringRow *row, uint16_t i_col, char *out, int out_len);
+int spring_column_text(const SpringSinkRow *row, uint16_t i_col, char *out, int out_len);
 
 /**
  * Get a BLOB column.
@@ -290,7 +290,7 @@ int spring_column_text(const SpringRow *row, uint16_t i_col, char *out, int out_
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-int spring_column_blob(const SpringRow *row, uint16_t i_col, void *out, int out_len);
+int spring_column_blob(const SpringSinkRow *row, uint16_t i_col, void *out, int out_len);
 
 /**
  * Get a bool column.
@@ -309,7 +309,7 @@ int spring_column_blob(const SpringRow *row, uint16_t i_col, void *out, int out_
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_bool(const SpringRow *row, uint16_t i_col, bool *out);
+enum SpringErrno spring_column_bool(const SpringSinkRow *row, uint16_t i_col, bool *out);
 
 /**
  * Get a 4-byte floating point column.
@@ -328,7 +328,7 @@ enum SpringErrno spring_column_bool(const SpringRow *row, uint16_t i_col, bool *
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_float(const SpringRow *row, uint16_t i_col, float *out);
+enum SpringErrno spring_column_float(const SpringSinkRow *row, uint16_t i_col, float *out);
 
 /**
  * Write the most recent error number into `errno` and message into a caller-provided buffer as a UTF-8

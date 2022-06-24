@@ -9,7 +9,7 @@ mod spring_config;
 pub mod spring_errno;
 pub mod spring_last_err;
 mod spring_pipeline;
-mod spring_row;
+mod spring_sink_row;
 
 use std::{
     ffi::{c_void, CStr},
@@ -24,7 +24,7 @@ use crate::{
     spring_errno::SpringErrno,
     spring_last_err::{update_last_error, LastError},
     spring_pipeline::SpringPipeline,
-    spring_row::SpringRow,
+    spring_sink_row::SpringSinkRow,
 };
 use ::springql::{error::SpringError, SpringPipeline as Pipeline};
 
@@ -163,13 +163,13 @@ pub unsafe extern "C" fn spring_command(
 pub unsafe extern "C" fn spring_pop(
     pipeline: *const SpringPipeline,
     queue: *const c_char,
-) -> *mut SpringRow {
+) -> *mut SpringSinkRow {
     let pipeline = (*pipeline).as_pipeline();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
     let result = with_catch(|| pipeline.pop(&queue));
     match result {
         Ok(row) => {
-            let row = SpringRow::new(row);
+            let row = SpringSinkRow::new(row);
             row.into_ptr()
         }
         Err(_) => ptr::null_mut(),
@@ -191,13 +191,13 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
     pipeline: *const SpringPipeline,
     queue: *const c_char,
     is_err: *mut bool,
-) -> *mut SpringRow {
+) -> *mut SpringSinkRow {
     let pipeline = (*pipeline).as_pipeline();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
     let result = with_catch(|| pipeline.pop_non_blocking(&queue));
     match result {
         Ok(Some(row)) => {
-            let ptr = SpringRow::new(row);
+            let ptr = SpringSinkRow::new(row);
             *is_err = false;
             ptr.into_ptr()
         }
@@ -219,11 +219,11 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
 /// - `Ok`: on success.
 /// - `CNull`: `pipeline` is a NULL pointer.
 #[no_mangle]
-pub extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
+pub extern "C" fn spring_row_close(row: *mut SpringSinkRow) -> SpringErrno {
     if row.is_null() {
         SpringErrno::CNull
     } else {
-        SpringRow::drop(row);
+        SpringSinkRow::drop(row);
         SpringErrno::Ok
     }
 }
@@ -245,7 +245,7 @@ pub extern "C" fn spring_row_close(row: *mut SpringRow) -> SpringErrno {
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_short(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_short,
 ) -> SpringErrno {
@@ -278,7 +278,7 @@ pub unsafe extern "C" fn spring_column_short(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_int(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_int,
 ) -> SpringErrno {
@@ -311,7 +311,7 @@ pub unsafe extern "C" fn spring_column_int(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_long(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_long,
 ) -> SpringErrno {
@@ -344,7 +344,7 @@ pub unsafe extern "C" fn spring_column_long(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_unsigned_int(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_uint,
 ) -> SpringErrno {
@@ -378,7 +378,7 @@ pub unsafe extern "C" fn spring_column_unsigned_int(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_text(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_char,
     out_len: c_int,
@@ -414,7 +414,7 @@ pub unsafe extern "C" fn spring_column_text(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_blob(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_void,
     out_len: c_int,
@@ -449,7 +449,7 @@ pub unsafe extern "C" fn spring_column_blob(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_bool(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut bool,
 ) -> SpringErrno {
@@ -482,7 +482,7 @@ pub unsafe extern "C" fn spring_column_bool(
 /// - `CNull`: Column value is NULL.
 #[no_mangle]
 pub unsafe extern "C" fn spring_column_float(
-    row: *const SpringRow,
+    row: *const SpringSinkRow,
     i_col: u16,
     out: *mut c_float,
 ) -> SpringErrno {
