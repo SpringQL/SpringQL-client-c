@@ -50,9 +50,14 @@ typedef void *SpringConfig;
 typedef void *SpringPipeline;
 
 /**
- * Row object from an in memory queue.
+ * Row object to pop from an in memory queue.
  */
 typedef void *SpringSinkRow;
+
+/**
+ * Row object to push into an in memory queue.
+ */
+typedef void *SpringSourceRow;
 
 /**
  * Returns default configuration.
@@ -165,14 +170,50 @@ SpringSinkRow *spring_pop_non_blocking(const SpringPipeline *pipeline,
                                        bool *is_err);
 
 /**
- * Frees heap occupied by a `SpringRow`.
+ * Push a row into an in memory queue. This is a non-blocking function.
+ *
+ * # Returns
+ *
+ * - `Ok`: on success.
+ * - `Unavailable`: queue named `queue` does not exist.
+ */
+enum SpringErrno spring_push(const SpringPipeline *pipeline,
+                             const char *queue,
+                             const SpringSourceRow *row);
+
+/**
+ * Create a source row from JSON string
+ *
+ * # Returns
+ *
+ * - non-NULL: Successfully created a row.
+ * - NULL: Error occurred.
+ *
+ * # Errors
+ *
+ * - `InvalidFormat`: JSON string is invalid.
+ */
+SpringSourceRow *spring_source_row_from_json(const char *json);
+
+/**
+ * Frees heap occupied by a `SpringSourceRow`.
  *
  * # Returns
  *
  * - `Ok`: on success.
  * - `CNull`: `pipeline` is a NULL pointer.
  */
-enum SpringErrno spring_row_close(SpringSinkRow *row);
+enum SpringErrno spring_source_row_close(SpringSourceRow *row);
+
+/**
+ * Frees heap occupied by a `SpringSinkRow`.
+ *
+ * # Returns
+ *
+ * - `Ok`: on success.
+ * - `CNull`: `pipeline` is a NULL pointer.
+ */
+enum SpringErrno spring_sink_row_close(SpringSinkRow *row);
 
 /**
  * Get a 2-byte integer column.

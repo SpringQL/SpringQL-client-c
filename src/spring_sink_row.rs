@@ -3,7 +3,8 @@
 use ::springql::SpringSinkRow as SinkRow;
 
 use std::{ffi::c_void, mem};
-/// Row object from an in memory queue.
+
+/// Row object to pop from an in memory queue.
 #[non_exhaustive]
 #[repr(transparent)]
 pub struct SpringSinkRow(*mut c_void);

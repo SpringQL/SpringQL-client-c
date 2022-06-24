@@ -10,6 +10,7 @@ pub mod spring_errno;
 pub mod spring_last_err;
 mod spring_pipeline;
 mod spring_sink_row;
+mod spring_source_row;
 
 use std::{
     ffi::{c_void, CStr},
@@ -25,6 +26,7 @@ use crate::{
     spring_last_err::{update_last_error, LastError},
     spring_pipeline::SpringPipeline,
     spring_sink_row::SpringSinkRow,
+    spring_source_row::SpringSourceRow,
 };
 use ::springql::{error::SpringError, SpringPipeline as Pipeline};
 
@@ -212,14 +214,72 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
     }
 }
 
-/// Frees heap occupied by a `SpringRow`.
+/// Push a row into an in memory queue. This is a non-blocking function.
+///
+/// # Returns
+///
+/// - `Ok`: on success.
+/// - `Unavailable`: queue named `queue` does not exist.
+#[no_mangle]
+pub unsafe extern "C" fn spring_push(
+    pipeline: *const SpringPipeline,
+    queue: *const c_char,
+    row: *const SpringSourceRow,
+) -> SpringErrno {
+    let pipeline = (*pipeline).as_pipeline();
+    let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
+    let source_row = (*row).to_row();
+    let result = with_catch(|| pipeline.push(&queue, source_row));
+    match result {
+        Ok(()) => SpringErrno::Ok,
+        Err(e) => e,
+    }
+}
+
+/// Create a source row from JSON string
+///
+/// # Returns
+///
+/// - non-NULL: Successfully created a row.
+/// - NULL: Error occurred.
+///
+/// # Errors
+///
+/// - `InvalidFormat`: JSON string is invalid.
+#[no_mangle]
+pub unsafe extern "C" fn spring_source_row_from_json(json: *const c_char) -> *mut SpringSourceRow {
+    let json = CStr::from_ptr(json).to_string_lossy().into_owned();
+    let res_source_row = with_catch(|| ::springql::SpringSourceRow::from_json(&json));
+    match res_source_row {
+        Ok(source_row) => SpringSourceRow::new(source_row).into_ptr(),
+        Err(_) => ptr::null_mut(),
+    }
+}
+
+/// Frees heap occupied by a `SpringSourceRow`.
 ///
 /// # Returns
 ///
 /// - `Ok`: on success.
 /// - `CNull`: `pipeline` is a NULL pointer.
 #[no_mangle]
-pub extern "C" fn spring_row_close(row: *mut SpringSinkRow) -> SpringErrno {
+pub extern "C" fn spring_source_row_close(row: *mut SpringSourceRow) -> SpringErrno {
+    if row.is_null() {
+        SpringErrno::CNull
+    } else {
+        SpringSourceRow::drop(row);
+        SpringErrno::Ok
+    }
+}
+
+/// Frees heap occupied by a `SpringSinkRow`.
+///
+/// # Returns
+///
+/// - `Ok`: on success.
+/// - `CNull`: `pipeline` is a NULL pointer.
+#[no_mangle]
+pub extern "C" fn spring_sink_row_close(row: *mut SpringSinkRow) -> SpringErrno {
     if row.is_null() {
         SpringErrno::CNull
     } else {
