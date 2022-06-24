@@ -13,6 +13,20 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+## [v0.14.0] - 2022-06-24
+
+### Changed
+
+- `SpringRow` into `SpringSinkRow` ([#50](https://github.com/SpringQL/SpringQL-client-c/pull/50))
+- `spring_row_close` -> `spring_sink_row_close` ([#50](https://github.com/SpringQL/SpringQL-client-c/pull/50))
+
+### Added
+
+- Following new APIs: ([#50](https://github.com/SpringQL/SpringQL-client-c/pull/50))
+  - `SpringSourceRow`
+  - `spring_source_row_from_json`
+  - `spring_source_row_close`
+
 ## [v0.13.0+4]
 
 ### Fixed
