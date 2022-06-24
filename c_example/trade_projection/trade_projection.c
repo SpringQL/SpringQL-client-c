@@ -91,7 +91,7 @@ void pop_print(const SpringPipeline *pipeline)
     {
         SpringErrno ret;
 
-        SpringRow *row = spring_pop(pipeline, "q_sink_trade");
+        SpringSinkRow *row = spring_pop(pipeline, "q_sink_trade");
         assert_not_null(row);
 
         int r = spring_column_text(row, 0, (char *)ts, TS_LEN);
@@ -103,7 +103,7 @@ void pop_print(const SpringPipeline *pipeline)
 
         printf("[row#%d] ts=%s amount=%d\n", i, ts, amount);
 
-        spring_row_close(row);
+        spring_sink_row_close(row);
     }
 }
 
