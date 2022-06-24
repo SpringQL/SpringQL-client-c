@@ -9,7 +9,7 @@ use std::{
 };
 
 use ::log::{info, warn};
-use ::springql_core::api::error::SpringError;
+use ::springql::error::SpringError;
 
 use crate::{c_mem::strcpy, spring_errno::SpringErrno};
 

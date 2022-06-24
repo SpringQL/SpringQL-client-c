@@ -1,6 +1,6 @@
 // This file is part of https://github.com/SpringQL/SpringQL-client-c which is licensed under MIT OR Apache-2.0. See file LICENSE-MIT or LICENSE-APACHE for full license details.
 
-use ::springql_core::api::SpringRow as Row;
+use ::springql::SpringSinkRow as SinkRow;
 
 use std::{ffi::c_void, mem};
 /// Row object from an in memory queue.
@@ -9,12 +9,12 @@ use std::{ffi::c_void, mem};
 pub struct SpringRow(*mut c_void);
 
 impl SpringRow {
-    pub fn new(pipe: Row) -> Self {
-        SpringRow(unsafe { mem::transmute(Box::new(pipe)) })
+    pub fn new(sink_row: SinkRow) -> Self {
+        SpringRow(unsafe { mem::transmute(Box::new(sink_row)) })
     }
 
-    pub fn as_row(&self) -> &Row {
-        unsafe { &*(self.0 as *const Row) }
+    pub fn as_row(&self) -> &SinkRow {
+        unsafe { &*(self.0 as *const SinkRow) }
     }
 
     pub fn drop(ptr: *mut SpringRow) {

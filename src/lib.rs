@@ -26,7 +26,7 @@ use crate::{
     spring_pipeline::SpringPipeline,
     spring_row::SpringRow,
 };
-use ::springql_core::api::{error::SpringError, SpringPipeline as Pipeline};
+use ::springql::{error::SpringError, SpringPipeline as Pipeline};
 
 /// Returns default configuration.
 ///
@@ -34,7 +34,7 @@ use ::springql_core::api::{error::SpringError, SpringPipeline as Pipeline};
 /// If you would like to change the default configuration, use `spring_config_toml()` instead.
 #[no_mangle]
 pub extern "C" fn spring_config_default() -> *mut SpringConfig {
-    let config = ::springql_core::api::SpringConfig::default();
+    let config = ::springql::SpringConfig::default();
     SpringConfig::new(config).into_ptr()
 }
 
@@ -60,7 +60,7 @@ pub unsafe extern "C" fn spring_config_toml(
     let s = CStr::from_ptr(overwrite_config_toml);
     let s = s.to_str().expect("failed to parse TOML string into UTF-8");
 
-    let config = springql_core::api::SpringConfig::new(s).expect("failed to parse TOML config");
+    let config = springql::SpringConfig::new(s).expect("failed to parse TOML config");
     SpringConfig::new(config).into_ptr()
 }
 
