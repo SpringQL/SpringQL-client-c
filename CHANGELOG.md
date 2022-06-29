@@ -13,6 +13,15 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+## [v0.15.0] - 2022-06-29
+
+### Added
+
+- Following new APIs: ([#52](https://github.com/SpringQL/SpringQL-client-c/pull/52))
+  - `spring_source_row_builder`
+  - `spring_source_row_add_column_blob`
+  - `spring_source_row_build`
+
 ## [v0.14.0] - 2022-06-24
 
 ### Changed

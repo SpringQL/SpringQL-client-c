@@ -11,12 +11,13 @@ pub mod spring_last_err;
 mod spring_pipeline;
 mod spring_sink_row;
 mod spring_source_row;
+mod spring_source_row_builder;
 
 use std::{
     ffi::{c_void, CStr},
     os::raw::{c_char, c_float, c_int, c_long, c_short, c_uint},
     panic::{catch_unwind, UnwindSafe},
-    ptr,
+    ptr, slice,
 };
 
 use crate::{
@@ -27,6 +28,7 @@ use crate::{
     spring_pipeline::SpringPipeline,
     spring_sink_row::SpringSinkRow,
     spring_source_row::SpringSourceRow,
+    spring_source_row_builder::SpringSourceRowBuilder,
 };
 use ::springql::{error::SpringError, SpringPipeline as Pipeline};
 
@@ -254,6 +256,64 @@ pub unsafe extern "C" fn spring_source_row_from_json(json: *const c_char) -> *mu
         Ok(source_row) => SpringSourceRow::new(source_row).into_ptr(),
         Err(_) => ptr::null_mut(),
     }
+}
+
+/// Start creating a source row using a builder.
+///
+/// # Returns
+///
+/// Pointer to the builder
+#[no_mangle]
+pub unsafe extern "C" fn spring_source_row_builder() -> *mut SpringSourceRowBuilder {
+    SpringSourceRowBuilder::default().into_ptr()
+}
+/// Add a BLOB column to the builder.
+///
+/// # Parameters
+///
+/// - `builder`: Pointer to the builder created via spring_source_row_builder().
+/// - `column_name`: Column name to add.
+/// - `v`: BLOB value to add. The byte sequence is copied internally.
+/// - `v_len`: `v`'s length.
+///
+/// # Returns
+///
+/// - `Ok`: on success.
+/// - `Sql`: `column_name` is already added to the builder.
+#[no_mangle]
+pub unsafe extern "C" fn spring_source_row_add_column_blob(
+    builder: *mut SpringSourceRowBuilder,
+    column_name: *const c_char,
+    v: *const c_void,
+    v_len: c_int,
+) -> SpringErrno {
+    let column_name = CStr::from_ptr(column_name).to_string_lossy().into_owned();
+
+    let v = v as *const u8;
+    let v = slice::from_raw_parts(v, v_len as usize);
+    let v = v.to_vec();
+
+    let rust_builder = (*builder).to_row_builder();
+    let res_rust_builder = with_catch(|| rust_builder.add_column(column_name, v));
+    match res_rust_builder {
+        Ok(rust_builder) => {
+            *builder = SpringSourceRowBuilder::new(rust_builder);
+            SpringErrno::Ok
+        }
+        Err(e) => e,
+    }
+}
+/// Finish creating a source row using a builder.
+///
+/// # Returns
+///
+/// SpringSourceRow
+#[no_mangle]
+pub unsafe extern "C" fn spring_source_row_build(
+    builder: *mut SpringSourceRowBuilder,
+) -> *mut SpringSourceRow {
+    let rust_builder = (*builder).to_row_builder();
+    SpringSourceRow::new(rust_builder.build()).into_ptr()
 }
 
 /// Frees heap occupied by a `SpringSourceRow`.
