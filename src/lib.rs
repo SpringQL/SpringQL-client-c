@@ -62,7 +62,7 @@ pub unsafe extern "C" fn spring_config_toml(
     let s = CStr::from_ptr(overwrite_config_toml);
     let s = s.to_str().expect("failed to parse TOML string into UTF-8");
 
-    let config = springql::SpringConfig::new(s).expect("failed to parse TOML config");
+    let config = springql::config_from_toml(s).expect("failed to parse TOML config");
     SpringConfig::new(config).into_ptr()
 }
 

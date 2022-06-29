@@ -15,6 +15,6 @@ name = "springql_client"
 cbindgen = "0.24"
 
 [dependencies]
-springql = "0.14.0"
-
 log = "0.4"
+springql = { path="../SpringQL/springql" }
+springql-core = { path="../SpringQL/springql-core" }
