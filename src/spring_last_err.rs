@@ -72,7 +72,7 @@ pub(super) fn update_last_error(err: LastError) {
     });
 }
 
-/// Write the most recent error number into `errno` and message into a caller-provided buffer as a UTF-8
+/// Write the most recent error number into `errno_` and message into a caller-provided buffer as a UTF-8
 /// string, returning the number of bytes written.
 ///
 /// # Note
@@ -91,7 +91,7 @@ pub(super) fn update_last_error(err: LastError) {
 /// - `< 0`: SpringErrno
 #[no_mangle]
 pub unsafe extern "C" fn spring_last_err(
-    errno: *mut SpringErrno,
+    errno_: *mut SpringErrno,
     errmsg: *mut c_char,
     errmsg_len: c_int,
 ) -> c_int {
@@ -103,12 +103,12 @@ pub unsafe extern "C" fn spring_last_err(
     let last_error = match take_last_error() {
         Some(err) => err,
         None => {
-            *errno = SpringErrno::Ok;
+            *errno_ = SpringErrno::Ok;
             return SpringErrno::Ok as c_int;
         }
     };
 
-    *errno = SpringErrno::from(&last_error);
+    *errno_ = SpringErrno::from(&last_error);
     let error_message = last_error.to_string();
 
     strcpy(&error_message, errmsg, errmsg_len)
