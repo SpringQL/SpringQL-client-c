@@ -13,6 +13,10 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+### Changed
+
+- apply api change for config deserialize ([#55](https://github.com/SpringQL/SpringQL-client-c/pull/55))
+
 ## [v0.15.0+2] - 2022-06-30
 
 ### Fixed
