@@ -13,6 +13,21 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+## [v0.15.0+2] - 2022-06-30
+
+### Fixed
+
+- Fix name conflict of `errno` in a `spring_last_err`'s argument with `errno.h` ([#54](https://github.com/SpringQL/SpringQL-client-c/pull/54))
+
+## [v0.15.0] - 2022-06-29
+
+### Added
+
+- Following new APIs: ([#52](https://github.com/SpringQL/SpringQL-client-c/pull/52))
+  - `spring_source_row_builder`
+  - `spring_source_row_add_column_blob`
+  - `spring_source_row_build`
+
 ## [v0.14.0] - 2022-06-24
 
 ### Changed
@@ -93,9 +108,12 @@ Depends on springql-core v0.7.1.
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
-[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0+4...HEAD
+[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.15.0+2...HEAD
 [Released]: https://github.com/SpringQL/SpringQL-client-c/releases
-[v0.13.0+4]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0+2...v0.13.0+4
+[v0.15.0+2]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.15.0...v0.15.0+2
+[v0.15.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.14.0...v0.15.0
+[v0.14.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0+4...v0.14.0
+[v0.13.0+4]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0+3...v0.13.0+4
 [v0.13.0+3]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0+2...v0.13.0+3
 [v0.13.0+2]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.13.0...v0.13.0+2
 [v0.13.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.12.0...v0.13.0

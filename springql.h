@@ -60,6 +60,11 @@ typedef void *SpringSinkRow;
 typedef void *SpringSourceRow;
 
 /**
+ * Builder of SpringSourceRow
+ */
+typedef void *SpringSourceRowBuilder;
+
+/**
  * Returns default configuration.
  *
  * Returned value is not modifiable (it is just a void pointer).
@@ -194,6 +199,44 @@ enum SpringErrno spring_push(const SpringPipeline *pipeline,
  * - `InvalidFormat`: JSON string is invalid.
  */
 SpringSourceRow *spring_source_row_from_json(const char *json);
+
+/**
+ * Start creating a source row using a builder.
+ *
+ * # Returns
+ *
+ * Pointer to the builder
+ */
+SpringSourceRowBuilder *spring_source_row_builder(void);
+
+/**
+ * Add a BLOB column to the builder.
+ *
+ * # Parameters
+ *
+ * - `builder`: Pointer to the builder created via spring_source_row_builder().
+ * - `column_name`: Column name to add.
+ * - `v`: BLOB value to add. The byte sequence is copied internally.
+ * - `v_len`: `v`'s length.
+ *
+ * # Returns
+ *
+ * - `Ok`: on success.
+ * - `Sql`: `column_name` is already added to the builder.
+ */
+enum SpringErrno spring_source_row_add_column_blob(SpringSourceRowBuilder *builder,
+                                                   const char *column_name,
+                                                   const void *v,
+                                                   int v_len);
+
+/**
+ * Finish creating a source row using a builder.
+ *
+ * # Returns
+ *
+ * SpringSourceRow
+ */
+SpringSourceRow *spring_source_row_build(SpringSourceRowBuilder *builder);
 
 /**
  * Frees heap occupied by a `SpringSourceRow`.
@@ -372,7 +415,7 @@ enum SpringErrno spring_column_bool(const SpringSinkRow *row, uint16_t i_col, bo
 enum SpringErrno spring_column_float(const SpringSinkRow *row, uint16_t i_col, float *out);
 
 /**
- * Write the most recent error number into `errno` and message into a caller-provided buffer as a UTF-8
+ * Write the most recent error number into `errno_` and message into a caller-provided buffer as a UTF-8
  * string, returning the number of bytes written.
  *
  * # Note
@@ -390,7 +433,7 @@ enum SpringErrno spring_column_float(const SpringSinkRow *row, uint16_t i_col, f
  * - `> 0`: the length of the recent error message.
  * - `< 0`: SpringErrno
  */
-int spring_last_err(enum SpringErrno *errno,
+int spring_last_err(enum SpringErrno *errno_,
                     char *errmsg,
                     int errmsg_len);
 
