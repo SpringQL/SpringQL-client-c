@@ -13,10 +13,10 @@
 
 void abort_with_report()
 {
-    SpringErrno errno;
+    SpringErrno errno_;
     char errmsg[1024];
-    spring_last_err(&errno, errmsg, 1024);
-    fprintf(stderr, "Error occurred (%d): %s", errno, errmsg);
+    spring_last_err(&errno_, errmsg, 1024);
+    fprintf(stderr, "Error occurred (%d): %s", errno_, errmsg);
     abort();
 }
 

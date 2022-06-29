@@ -415,7 +415,7 @@ enum SpringErrno spring_column_bool(const SpringSinkRow *row, uint16_t i_col, bo
 enum SpringErrno spring_column_float(const SpringSinkRow *row, uint16_t i_col, float *out);
 
 /**
- * Write the most recent error number into `errno` and message into a caller-provided buffer as a UTF-8
+ * Write the most recent error number into `errno_` and message into a caller-provided buffer as a UTF-8
  * string, returning the number of bytes written.
  *
  * # Note
@@ -433,7 +433,7 @@ enum SpringErrno spring_column_float(const SpringSinkRow *row, uint16_t i_col, f
  * - `> 0`: the length of the recent error message.
  * - `< 0`: SpringErrno
  */
-int spring_last_err(enum SpringErrno *errno,
+int spring_last_err(enum SpringErrno *errno_,
                     char *errmsg,
                     int errmsg_len);
 
