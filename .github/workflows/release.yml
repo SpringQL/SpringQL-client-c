@@ -1,9 +1,15 @@
 name: release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+# on:
+#   push:
+#     tags:
+#       - 'v*'
 
 jobs:
   job-matrix:
@@ -90,11 +96,11 @@ jobs:
 
           zip -r ${artifact_dir}.zip ${artifact_dir}
 
-      - name: Upload Files to a GitHub Release
-        uses: svenstaro/upload-release-action@2.2.1
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: springql_client-${{ steps.set-outputs.outputs.build-target }}-${{ steps.set-outputs.outputs.build-type }}.zip
-          tag: ${{ github.ref }}
-          overwrite: true
-          prerelease: false
+      # - name: Upload Files to a GitHub Release
+      #   uses: svenstaro/upload-release-action@2.2.1
+      #   with:
+      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
+      #     file: springql_client-${{ steps.set-outputs.outputs.build-target }}-${{ steps.set-outputs.outputs.build-type }}.zip
+      #     tag: ${{ github.ref }}
+      #     overwrite: true
+      #     prerelease: false
