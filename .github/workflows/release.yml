@@ -16,7 +16,7 @@ jobs:
     name: ${{ matrix.os }}; release:${{ matrix.release-build }}; ${{ matrix.cross-target }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
