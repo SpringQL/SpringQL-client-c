@@ -75,15 +75,19 @@ jobs:
           components: llvm-tools-preview
           override: true
 
-      - name: Install cross-build toolchain
-        if: ${{ matrix.cross-target }}
+      - name: Straight build
+        if: ${{ ! matrix.cross-target }}
         run: |
-          rustup target add ${{ matrix.cross-target }}
-
-      - name: build
-        run: |
-          cargo build ${{ steps.set-outputs.outputs.release-build-option }} ${{ steps.set-outputs.outputs.target-option }}
+          cargo build ${{ steps.set-outputs.outputs.release-build-option }}
           
+      - name: Cross build
+        if: ${{ matrix.cross-target }}
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: ${{ steps.set-outputs.outputs.release-build-option }} ${{ steps.set-outputs.outputs.target-option }}
+
       - name: create artifact
         run: |
           artifact_dir=springql_client-${{ steps.set-outputs.outputs.build-target }}-${{ steps.set-outputs.outputs.build-type }}
