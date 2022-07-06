@@ -79,7 +79,12 @@ jobs:
         if: ${{ ! matrix.cross-target }}
         run: |
           cargo build ${{ steps.set-outputs.outputs.release-build-option }}
-          
+
+      - name: Install cross-build toolchain
+        if: ${{ matrix.cross-target }}
+        run: |
+          rustup target add ${{ matrix.cross-target }}
+
       - name: Cross build
         if: ${{ matrix.cross-target }}
         uses: actions-rs/cargo@v1
