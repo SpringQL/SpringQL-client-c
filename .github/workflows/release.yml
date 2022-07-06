@@ -17,6 +17,12 @@ jobs:
           - os: ubuntu-latest
             release-build: true
 
+          - os: ubuntu-latest
+            cross-target: aarch64-unknown-linux-gnu
+          - os: ubuntu-latest
+            cross-target: aarch64-unknown-linux-gnu
+            release-build: true
+
           - os: macos-latest
           - os: macos-latest
             release-build: true
@@ -63,15 +69,24 @@ jobs:
           components: llvm-tools-preview
           override: true
 
+      - name: Straight build
+        if: ${{ ! matrix.cross-target }}
+        run: |
+          cargo build ${{ steps.set-outputs.outputs.release-build-option }}
+
       - name: Install cross-build toolchain
         if: ${{ matrix.cross-target }}
         run: |
           rustup target add ${{ matrix.cross-target }}
 
-      - name: build
-        run: |
-          cargo build ${{ steps.set-outputs.outputs.release-build-option }} ${{ steps.set-outputs.outputs.target-option }}
-          
+      - name: Cross build
+        if: ${{ matrix.cross-target }}
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: ${{ steps.set-outputs.outputs.release-build-option }} ${{ steps.set-outputs.outputs.target-option }}
+
       - name: create artifact
         run: |
           artifact_dir=springql_client-${{ steps.set-outputs.outputs.build-target }}-${{ steps.set-outputs.outputs.build-type }}
