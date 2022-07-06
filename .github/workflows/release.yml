@@ -17,6 +17,12 @@ jobs:
           - os: ubuntu-latest
             release-build: true
 
+          - os: ubuntu-latest
+            cross-target: aarch64-unknown-linux-gnu
+          - os: ubuntu-latest
+            cross-target: aarch64-unknown-linux-gnu
+            release-build: true
+
           - os: macos-latest
           - os: macos-latest
             release-build: true
