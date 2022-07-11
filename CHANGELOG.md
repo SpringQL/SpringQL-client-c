@@ -13,6 +13,12 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+## [v0.16.0+3] - 2022-07-11
+
+### Fixed
+
+- Memory leak of `SpringSourceRowBuilder` ([#58](https://github.com/SpringQL/SpringQL-client-c/pull/58))
+
 ## [v0.16.0+2] - 2022-07-06
 
 ### Added
@@ -118,8 +124,9 @@ Depends on springql-core v0.7.1.
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
-[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.16.0+2...HEAD
+[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.16.0+3...HEAD
 [Released]: https://github.com/SpringQL/SpringQL-client-c/releases
+[v0.16.0+3]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.16.0+2...v0.16.0+3
 [v0.16.0+2]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.16.0...v0.16.0+2
 [v0.16.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.15.0+2...v0.16.0
 [v0.15.0+2]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.15.0...v0.15.0+2
