@@ -232,6 +232,8 @@ enum SpringErrno spring_source_row_add_column_blob(SpringSourceRowBuilder *build
 /**
  * Finish creating a source row using a builder.
  *
+ * The heap space for the `builder` is internally freed.
+ *
  * # Returns
  *
  * SpringSourceRow
