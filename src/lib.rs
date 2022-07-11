@@ -305,6 +305,8 @@ pub unsafe extern "C" fn spring_source_row_add_column_blob(
 }
 /// Finish creating a source row using a builder.
 ///
+/// The heap space for the `builder` is internally freed.
+///
 /// # Returns
 ///
 /// SpringSourceRow
@@ -313,7 +315,9 @@ pub unsafe extern "C" fn spring_source_row_build(
     builder: *mut SpringSourceRowBuilder,
 ) -> *mut SpringSourceRow {
     let rust_builder = (*builder).to_row_builder();
-    SpringSourceRow::new(rust_builder.build()).into_ptr()
+    let ret = SpringSourceRow::new(rust_builder.build()).into_ptr();
+    SpringSourceRowBuilder::drop(builder);
+    ret
 }
 
 /// Frees heap occupied by a `SpringSourceRow`.
