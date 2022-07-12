@@ -35,7 +35,7 @@ use crate::{
     spring_source_row_builder::SpringSourceRowBuilder,
 };
 use ::springql::{
-    error::SpringError, SpringPipeline as Pipeline,
+    error::SpringError, SpringPipeline as Pipeline, SpringSourceRow as RuSpringSourceRow,
     SpringSourceRowBuilder as RuSpringSourceRowBuilder,
 };
 
@@ -233,11 +233,13 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
 pub unsafe extern "C" fn spring_push(
     pipeline: *const SpringPipeline,
     queue: *const c_char,
-    row: *const SpringSourceRow,
+    row: *mut SpringSourceRow,
 ) -> SpringErrno {
     let pipeline = (*pipeline).as_pipeline();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
-    let source_row = (*row).to_row();
+
+    let source_row = Box::from_raw(row);
+    let source_row = RuSpringSourceRow::from(*source_row);
     let result = with_catch(|| pipeline.push(&queue, source_row));
     match result {
         Ok(()) => SpringErrno::Ok,
@@ -258,9 +260,9 @@ pub unsafe extern "C" fn spring_push(
 #[no_mangle]
 pub unsafe extern "C" fn spring_source_row_from_json(json: *const c_char) -> *mut SpringSourceRow {
     let json = CStr::from_ptr(json).to_string_lossy().into_owned();
-    let res_source_row = with_catch(|| ::springql::SpringSourceRow::from_json(&json));
-    match res_source_row {
-        Ok(source_row) => SpringSourceRow::new(source_row).into_ptr(),
+    let res_ru_source_row = with_catch(|| ::springql::SpringSourceRow::from_json(&json));
+    match res_ru_source_row {
+        Ok(ru_source_row) => SpringSourceRow::from(ru_source_row).into_ptr(),
         Err(_) => ptr::null_mut(),
     }
 }
@@ -327,7 +329,7 @@ pub unsafe extern "C" fn spring_source_row_build(
 ) -> *mut SpringSourceRow {
     let builder = Box::from_raw(builder);
     let ru_builder = RuSpringSourceRowBuilder::from(*builder);
-    SpringSourceRow::new(ru_builder.build()).into_ptr()
+    SpringSourceRow::from(ru_builder.build()).into_ptr()
 }
 
 /// Frees heap occupied by a `SpringSourceRow`.
@@ -337,11 +339,11 @@ pub unsafe extern "C" fn spring_source_row_build(
 /// - `Ok`: on success.
 /// - `CNull`: `pipeline` is a NULL pointer.
 #[no_mangle]
-pub extern "C" fn spring_source_row_close(row: *mut SpringSourceRow) -> SpringErrno {
+pub unsafe extern "C" fn spring_source_row_close(row: *mut SpringSourceRow) -> SpringErrno {
     if row.is_null() {
         SpringErrno::CNull
     } else {
-        SpringSourceRow::drop(row);
+        let _ = Box::from_raw(row);
         SpringErrno::Ok
     }
 }

@@ -45,6 +45,11 @@ typedef enum SpringErrno {
 typedef struct SpringConfig SpringConfig;
 
 /**
+ * Row object to push into an in memory queue.
+ */
+typedef struct SpringSourceRow SpringSourceRow;
+
+/**
  * Builder of SpringSourceRow
  */
 typedef struct SpringSourceRowBuilder SpringSourceRowBuilder;
@@ -58,11 +63,6 @@ typedef void *SpringPipeline;
  * Row object to pop from an in memory queue.
  */
 typedef void *SpringSinkRow;
-
-/**
- * Row object to push into an in memory queue.
- */
-typedef void *SpringSourceRow;
 
 /**
  * Returns default configuration.
@@ -184,7 +184,7 @@ SpringSinkRow *spring_pop_non_blocking(const SpringPipeline *pipeline,
  */
 enum SpringErrno spring_push(const SpringPipeline *pipeline,
                              const char *queue,
-                             const SpringSourceRow *row);
+                             struct SpringSourceRow *row);
 
 /**
  * Create a source row from JSON string
@@ -198,7 +198,7 @@ enum SpringErrno spring_push(const SpringPipeline *pipeline,
  *
  * - `InvalidFormat`: JSON string is invalid.
  */
-SpringSourceRow *spring_source_row_from_json(const char *json);
+struct SpringSourceRow *spring_source_row_from_json(const char *json);
 
 /**
  * Start creating a source row using a builder.
@@ -244,7 +244,7 @@ struct SpringSourceRowBuilder *spring_source_row_add_column_blob(struct SpringSo
  *
  * SpringSourceRow
  */
-SpringSourceRow *spring_source_row_build(struct SpringSourceRowBuilder *builder);
+struct SpringSourceRow *spring_source_row_build(struct SpringSourceRowBuilder *builder);
 
 /**
  * Frees heap occupied by a `SpringSourceRow`.
@@ -254,7 +254,7 @@ SpringSourceRow *spring_source_row_build(struct SpringSourceRowBuilder *builder)
  * - `Ok`: on success.
  * - `CNull`: `pipeline` is a NULL pointer.
  */
-enum SpringErrno spring_source_row_close(SpringSourceRow *row);
+enum SpringErrno spring_source_row_close(struct SpringSourceRow *row);
 
 /**
  * Frees heap occupied by a `SpringSinkRow`.
