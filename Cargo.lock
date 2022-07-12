@@ -1044,7 +1044,7 @@ dependencies = [
 
 [[package]]
 name = "springql-client-c"
-version = "0.16.0+3"
+version = "0.16.0+4"
 dependencies = [
  "cbindgen",
  "log",
