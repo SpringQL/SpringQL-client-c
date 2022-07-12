@@ -5,15 +5,6 @@ use std::ffi::CString;
 use crate::*;
 
 #[test]
-fn test_spring_config() {
-    unsafe {
-        let config = spring_config_default();
-        assert!(!config.is_null());
-        spring_config_close(config);
-    }
-}
-
-#[test]
 fn test_spring_source_row_builder() {
     unsafe {
         let builder = spring_source_row_builder();
