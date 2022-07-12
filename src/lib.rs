@@ -6,6 +6,7 @@
 
 pub(crate) mod c_mem;
 
+pub mod spring_config;
 pub mod spring_errno;
 pub mod spring_last_err;
 mod spring_pipeline;
@@ -25,6 +26,7 @@ use std::{
 
 use crate::{
     c_mem::{memcpy, strcpy},
+    spring_config::SpringConfig,
     spring_errno::SpringErrno,
     spring_last_err::{update_last_error, LastError},
     spring_pipeline::SpringPipeline,
@@ -33,7 +35,6 @@ use crate::{
     spring_source_row_builder::SpringSourceRowBuilder,
 };
 use ::springql::{error::SpringError, SpringPipeline as Pipeline};
-use springql::SpringConfig;
 
 /// Returns default configuration.
 ///
@@ -42,7 +43,7 @@ use springql::SpringConfig;
 #[no_mangle]
 pub extern "C" fn spring_config_default() -> *mut SpringConfig {
     let config = SpringConfig::default();
-    Box::into_raw(Box::new(config))
+    config.into_ptr()
 }
 
 /// Configuration by TOML format string.
@@ -67,8 +68,8 @@ pub unsafe extern "C" fn spring_config_toml(
     let s = CStr::from_ptr(overwrite_config_toml);
     let s = s.to_str().expect("failed to parse TOML string into UTF-8");
 
-    let config = SpringConfig::new(s).expect("failed to parse TOML config");
-    Box::into_raw(Box::new(config))
+    let config = SpringConfig::from_toml(s).expect("failed to parse TOML config");
+    config.into_ptr()
 }
 
 /// Frees heap occupied by a `SpringConfig`.
@@ -100,7 +101,7 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
 #[no_mangle]
 pub unsafe extern "C" fn spring_open(config: *const SpringConfig) -> *mut SpringPipeline {
     let config = &*config;
-    let pipeline = Pipeline::new(config);
+    let pipeline = Pipeline::new(config.as_ref());
     match pipeline {
         Ok(pipe) => {
             let ptr = SpringPipeline::new(pipe);

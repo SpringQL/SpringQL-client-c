@@ -40,6 +40,11 @@ typedef enum SpringErrno {
 } SpringErrno;
 
 /**
+ * Configuration.
+ */
+typedef struct SpringConfig SpringConfig;
+
+/**
  * Pipeline (dataflow definition) in SpringQL.
  */
 typedef void *SpringPipeline;
@@ -65,7 +70,7 @@ typedef void *SpringSourceRowBuilder;
  * Returned value is not modifiable (it is just a void pointer).
  * If you would like to change the default configuration, use `spring_config_toml()` instead.
  */
-SpringConfig *spring_config_default(void);
+struct SpringConfig *spring_config_default(void);
 
 /**
  * Configuration by TOML format string.
@@ -84,7 +89,7 @@ SpringConfig *spring_config_default(void);
  * - `overwrite_config_toml` includes invalid key and/or value.
  * - `overwrite_config_toml` is not valid as TOML.
  */
-SpringConfig *spring_config_toml(const char *overwrite_config_toml);
+struct SpringConfig *spring_config_toml(const char *overwrite_config_toml);
 
 /**
  * Frees heap occupied by a `SpringConfig`.
@@ -94,7 +99,7 @@ SpringConfig *spring_config_toml(const char *overwrite_config_toml);
  * - `Ok`: on success.
  * - `CNull`: `config` is a NULL pointer.
  */
-enum SpringErrno spring_config_close(SpringConfig *config);
+enum SpringErrno spring_config_close(struct SpringConfig *config);
 
 /**
  * Creates and open an in-process stream pipeline.
@@ -108,7 +113,7 @@ enum SpringErrno spring_config_close(SpringConfig *config);
  *
  * No errors are expected currently.
  */
-SpringPipeline *spring_open(const SpringConfig *config);
+SpringPipeline *spring_open(const struct SpringConfig *config);
 
 /**
  * Frees heap occupied by a `SpringPipeline`.
