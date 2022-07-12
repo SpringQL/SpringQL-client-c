@@ -34,7 +34,10 @@ use crate::{
     spring_source_row::SpringSourceRow,
     spring_source_row_builder::SpringSourceRowBuilder,
 };
-use ::springql::{error::SpringError, SpringPipeline as Pipeline};
+use ::springql::{
+    error::SpringError, SpringPipeline as Pipeline,
+    SpringSourceRowBuilder as RuSpringSourceRowBuilder,
+};
 
 /// Returns default configuration.
 ///
@@ -271,7 +274,9 @@ pub unsafe extern "C" fn spring_source_row_from_json(json: *const c_char) -> *mu
 pub unsafe extern "C" fn spring_source_row_builder() -> *mut SpringSourceRowBuilder {
     SpringSourceRowBuilder::default().into_ptr()
 }
-/// Add a BLOB column to the builder.
+/// Add a BLOB column to the builder and return the new one.
+///
+/// `builder` is freed internally.
 ///
 /// # Parameters
 ///
@@ -282,7 +287,11 @@ pub unsafe extern "C" fn spring_source_row_builder() -> *mut SpringSourceRowBuil
 ///
 /// # Returns
 ///
-/// - `Ok`: on success.
+/// - non-NULL: Successfully created a row.
+/// - NULL: Error occurred.
+///
+/// # Errors
+///
 /// - `Sql`: `column_name` is already added to the builder.
 #[no_mangle]
 pub unsafe extern "C" fn spring_source_row_add_column_blob(
@@ -290,21 +299,19 @@ pub unsafe extern "C" fn spring_source_row_add_column_blob(
     column_name: *const c_char,
     v: *const c_void,
     v_len: c_int,
-) -> SpringErrno {
+) -> *mut SpringSourceRowBuilder {
     let column_name = CStr::from_ptr(column_name).to_string_lossy().into_owned();
 
     let v = v as *const u8;
     let v = slice::from_raw_parts(v, v_len as usize);
     let v = v.to_vec();
 
-    let rust_builder = (*builder).to_row_builder();
-    let res_rust_builder = with_catch(|| rust_builder.add_column(column_name, v));
-    match res_rust_builder {
-        Ok(rust_builder) => {
-            *builder = SpringSourceRowBuilder::new(rust_builder);
-            SpringErrno::Ok
-        }
-        Err(e) => e,
+    let builder = Box::from_raw(builder);
+    let ru_builder = RuSpringSourceRowBuilder::from(*builder);
+    let res_ru_builder = with_catch(|| ru_builder.add_column(column_name, v));
+    match res_ru_builder {
+        Ok(ru_builder) => SpringSourceRowBuilder::from(ru_builder).into_ptr(),
+        Err(_) => ptr::null_mut(),
     }
 }
 /// Finish creating a source row using a builder.
@@ -318,10 +325,9 @@ pub unsafe extern "C" fn spring_source_row_add_column_blob(
 pub unsafe extern "C" fn spring_source_row_build(
     builder: *mut SpringSourceRowBuilder,
 ) -> *mut SpringSourceRow {
-    let rust_builder = (*builder).to_row_builder();
-    let ret = SpringSourceRow::new(rust_builder.build()).into_ptr();
-    SpringSourceRowBuilder::drop(builder);
-    ret
+    let builder = Box::from_raw(builder);
+    let ru_builder = RuSpringSourceRowBuilder::from(*builder);
+    SpringSourceRow::new(ru_builder.build()).into_ptr()
 }
 
 /// Frees heap occupied by a `SpringSourceRow`.

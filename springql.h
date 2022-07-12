@@ -45,6 +45,11 @@ typedef enum SpringErrno {
 typedef struct SpringConfig SpringConfig;
 
 /**
+ * Builder of SpringSourceRow
+ */
+typedef struct SpringSourceRowBuilder SpringSourceRowBuilder;
+
+/**
  * Pipeline (dataflow definition) in SpringQL.
  */
 typedef void *SpringPipeline;
@@ -58,11 +63,6 @@ typedef void *SpringSinkRow;
  * Row object to push into an in memory queue.
  */
 typedef void *SpringSourceRow;
-
-/**
- * Builder of SpringSourceRow
- */
-typedef void *SpringSourceRowBuilder;
 
 /**
  * Returns default configuration.
@@ -207,10 +207,12 @@ SpringSourceRow *spring_source_row_from_json(const char *json);
  *
  * Pointer to the builder
  */
-SpringSourceRowBuilder *spring_source_row_builder(void);
+struct SpringSourceRowBuilder *spring_source_row_builder(void);
 
 /**
- * Add a BLOB column to the builder.
+ * Add a BLOB column to the builder and return the new one.
+ *
+ * `builder` is freed internally.
  *
  * # Parameters
  *
@@ -221,13 +223,17 @@ SpringSourceRowBuilder *spring_source_row_builder(void);
  *
  * # Returns
  *
- * - `Ok`: on success.
+ * - non-NULL: Successfully created a row.
+ * - NULL: Error occurred.
+ *
+ * # Errors
+ *
  * - `Sql`: `column_name` is already added to the builder.
  */
-enum SpringErrno spring_source_row_add_column_blob(SpringSourceRowBuilder *builder,
-                                                   const char *column_name,
-                                                   const void *v,
-                                                   int v_len);
+struct SpringSourceRowBuilder *spring_source_row_add_column_blob(struct SpringSourceRowBuilder *builder,
+                                                                 const char *column_name,
+                                                                 const void *v,
+                                                                 int v_len);
 
 /**
  * Finish creating a source row using a builder.
@@ -238,7 +244,7 @@ enum SpringErrno spring_source_row_add_column_blob(SpringSourceRowBuilder *build
  *
  * SpringSourceRow
  */
-SpringSourceRow *spring_source_row_build(SpringSourceRowBuilder *builder);
+SpringSourceRow *spring_source_row_build(struct SpringSourceRowBuilder *builder);
 
 /**
  * Frees heap occupied by a `SpringSourceRow`.
