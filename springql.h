@@ -80,7 +80,7 @@ struct SpringConfig *spring_config_default(void);
  * # Parameters
  *
  * - `overwrite_config_toml`: TOML format configuration to overwrite default.
- *   See https://springql.github.io/deployment/configuration for TOML format and configuration values.
+ *   See <https://springql.github.io/deployment/configuration> for TOML format and configuration values.
  *
  * # Panics
  *
@@ -145,7 +145,7 @@ enum SpringErrno spring_command(const struct SpringPipeline *pipeline, const cha
  *
  * Do not call this function from threads.
  * If you need to pop from multiple in-memory queues using threads, use `spring_pop_non_blocking()`.
- * See: https://github.com/SpringQL/SpringQL/issues/125
+ * See: <https://github.com/SpringQL/SpringQL/issues/125>
  *
  * # Returns
  *
