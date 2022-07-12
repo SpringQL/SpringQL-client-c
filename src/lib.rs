@@ -13,6 +13,9 @@ mod spring_sink_row;
 mod spring_source_row;
 mod spring_source_row_builder;
 
+#[cfg(test)]
+mod tests;
+
 use std::{
     ffi::{c_void, CStr},
     os::raw::{c_char, c_float, c_int, c_long, c_short, c_uint},
