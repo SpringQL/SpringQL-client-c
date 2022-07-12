@@ -8,7 +8,7 @@ use crate::*;
 fn test_spring_source_row_builder() {
     unsafe {
         let c1_col = CString::new("c1").unwrap();
-        let c1_value = vec![0x01, 0x02, 0x03];
+        let c1_value = vec![0x01u8, 0x02, 0x03];
 
         let builder = spring_source_row_builder();
         let builder = spring_source_row_add_column_blob(
