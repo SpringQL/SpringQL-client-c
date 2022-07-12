@@ -13,6 +13,26 @@ Also check the changes in springql-core: <https://github.com/SpringQL/SpringQL/b
 <!-- markdownlint-disable MD024 -->
 ## [Unreleased]
 
+## [v0.16.0+4] - 2022-07-12
+
+### Fixed
+
+- Undefined behaviors on the following structures: ([#62](https://github.com/SpringQL/SpringQL-client-c/pull/62))
+  - SpringConfig
+  - SpringPipeline
+  - SpringSinkRow
+  - SpringSourceRow
+  - SpringSourceRowBuilder
+
+### Changed
+
+- `spring_push()` takes `SpringSourceRow *` instead of `const SpringSourceRow *`. It de-allocates `SpringSourceRow *`. ([#62](https://github.com/SpringQL/SpringQL-client-c/pull/62))
+- `spring_source_row_add_column_blob()` returns new builder instead of modifying the existing one. ([#62](https://github.com/SpringQL/SpringQL-client-c/pull/62))
+
+### Removed
+
+- `spring_source_row_close()` ([#62](https://github.com/SpringQL/SpringQL-client-c/pull/62))
+
 ## [v0.16.0+3] - 2022-07-11
 
 ### Fixed
@@ -124,8 +144,9 @@ Depends on springql-core v0.7.1.
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
-[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.16.0+3...HEAD
+[Unreleased]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.16.0+4...HEAD
 [Released]: https://github.com/SpringQL/SpringQL-client-c/releases
+[v0.16.0+4]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.16.0+4...v0.16.0+4
 [v0.16.0+3]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.16.0+2...v0.16.0+3
 [v0.16.0+2]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.16.0...v0.16.0+2
 [v0.16.0]: https://github.com/SpringQL/SpringQL-client-c/compare/v0.15.0+2...v0.16.0
