@@ -42,27 +42,27 @@ typedef enum SpringErrno {
 /**
  * Configuration.
  */
-typedef void *SpringConfig;
+typedef struct SpringConfig SpringConfig;
 
 /**
  * Pipeline (dataflow definition) in SpringQL.
  */
-typedef void *SpringPipeline;
+typedef struct SpringPipeline SpringPipeline;
 
 /**
  * Row object to pop from an in memory queue.
  */
-typedef void *SpringSinkRow;
+typedef struct SpringSinkRow SpringSinkRow;
 
 /**
  * Row object to push into an in memory queue.
  */
-typedef void *SpringSourceRow;
+typedef struct SpringSourceRow SpringSourceRow;
 
 /**
  * Builder of SpringSourceRow
  */
-typedef void *SpringSourceRowBuilder;
+typedef struct SpringSourceRowBuilder SpringSourceRowBuilder;
 
 /**
  * Returns default configuration.
@@ -70,7 +70,7 @@ typedef void *SpringSourceRowBuilder;
  * Returned value is not modifiable (it is just a void pointer).
  * If you would like to change the default configuration, use `spring_config_toml()` instead.
  */
-SpringConfig *spring_config_default(void);
+struct SpringConfig *spring_config_default(void);
 
 /**
  * Configuration by TOML format string.
@@ -89,7 +89,7 @@ SpringConfig *spring_config_default(void);
  * - `overwrite_config_toml` includes invalid key and/or value.
  * - `overwrite_config_toml` is not valid as TOML.
  */
-SpringConfig *spring_config_toml(const char *overwrite_config_toml);
+struct SpringConfig *spring_config_toml(const char *overwrite_config_toml);
 
 /**
  * Frees heap occupied by a `SpringConfig`.
@@ -99,7 +99,7 @@ SpringConfig *spring_config_toml(const char *overwrite_config_toml);
  * - `Ok`: on success.
  * - `CNull`: `config` is a NULL pointer.
  */
-enum SpringErrno spring_config_close(SpringConfig *config);
+enum SpringErrno spring_config_close(struct SpringConfig *config);
 
 /**
  * Creates and open an in-process stream pipeline.
@@ -113,7 +113,7 @@ enum SpringErrno spring_config_close(SpringConfig *config);
  *
  * No errors are expected currently.
  */
-SpringPipeline *spring_open(const SpringConfig *config);
+struct SpringPipeline *spring_open(const struct SpringConfig *config);
 
 /**
  * Frees heap occupied by a `SpringPipeline`.
@@ -123,7 +123,7 @@ SpringPipeline *spring_open(const SpringConfig *config);
  * - `Ok`: on success.
  * - `CNull`: `pipeline` is a NULL pointer.
  */
-enum SpringErrno spring_close(SpringPipeline *pipeline);
+enum SpringErrno spring_close(struct SpringPipeline *pipeline);
 
 /**
  * Execute commands (DDL) to modify the pipeline.
@@ -138,7 +138,7 @@ enum SpringErrno spring_close(SpringPipeline *pipeline);
  * - `InvalidOption`:
  *   - `OPTIONS` in `CREATE` statement includes invalid key or value.
  */
-enum SpringErrno spring_command(const SpringPipeline *pipeline, const char *sql);
+enum SpringErrno spring_command(const struct SpringPipeline *pipeline, const char *sql);
 
 /**
  * Pop a row from an in memory queue. This is a blocking function.
@@ -156,7 +156,7 @@ enum SpringErrno spring_command(const SpringPipeline *pipeline, const char *sql)
  *
  * - `Unavailable`: queue named `queue` does not exist.
  */
-SpringSinkRow *spring_pop(const SpringPipeline *pipeline, const char *queue);
+struct SpringSinkRow *spring_pop(const struct SpringPipeline *pipeline, const char *queue);
 
 /**
  * Pop a row from an in memory queue. This is a non-blocking function.
@@ -170,21 +170,23 @@ SpringSinkRow *spring_pop(const SpringPipeline *pipeline, const char *queue);
  *
  * - `Unavailable`: queue named `queue` does not exist.
  */
-SpringSinkRow *spring_pop_non_blocking(const SpringPipeline *pipeline,
-                                       const char *queue,
-                                       bool *is_err);
+struct SpringSinkRow *spring_pop_non_blocking(const struct SpringPipeline *pipeline,
+                                              const char *queue,
+                                              bool *is_err);
 
 /**
  * Push a row into an in memory queue. This is a non-blocking function.
+ *
+ * `row` is freed internally.
  *
  * # Returns
  *
  * - `Ok`: on success.
  * - `Unavailable`: queue named `queue` does not exist.
  */
-enum SpringErrno spring_push(const SpringPipeline *pipeline,
+enum SpringErrno spring_push(const struct SpringPipeline *pipeline,
                              const char *queue,
-                             const SpringSourceRow *row);
+                             struct SpringSourceRow *row);
 
 /**
  * Create a source row from JSON string
@@ -198,7 +200,7 @@ enum SpringErrno spring_push(const SpringPipeline *pipeline,
  *
  * - `InvalidFormat`: JSON string is invalid.
  */
-SpringSourceRow *spring_source_row_from_json(const char *json);
+struct SpringSourceRow *spring_source_row_from_json(const char *json);
 
 /**
  * Start creating a source row using a builder.
@@ -207,10 +209,12 @@ SpringSourceRow *spring_source_row_from_json(const char *json);
  *
  * Pointer to the builder
  */
-SpringSourceRowBuilder *spring_source_row_builder(void);
+struct SpringSourceRowBuilder *spring_source_row_builder(void);
 
 /**
- * Add a BLOB column to the builder.
+ * Add a BLOB column to the builder and return the new one.
+ *
+ * `builder` is freed internally.
  *
  * # Parameters
  *
@@ -221,13 +225,17 @@ SpringSourceRowBuilder *spring_source_row_builder(void);
  *
  * # Returns
  *
- * - `Ok`: on success.
+ * - non-NULL: Successfully created a row.
+ * - NULL: Error occurred.
+ *
+ * # Errors
+ *
  * - `Sql`: `column_name` is already added to the builder.
  */
-enum SpringErrno spring_source_row_add_column_blob(SpringSourceRowBuilder *builder,
-                                                   const char *column_name,
-                                                   const void *v,
-                                                   int v_len);
+struct SpringSourceRowBuilder *spring_source_row_add_column_blob(struct SpringSourceRowBuilder *builder,
+                                                                 const char *column_name,
+                                                                 const void *v,
+                                                                 int v_len);
 
 /**
  * Finish creating a source row using a builder.
@@ -238,17 +246,7 @@ enum SpringErrno spring_source_row_add_column_blob(SpringSourceRowBuilder *build
  *
  * SpringSourceRow
  */
-SpringSourceRow *spring_source_row_build(SpringSourceRowBuilder *builder);
-
-/**
- * Frees heap occupied by a `SpringSourceRow`.
- *
- * # Returns
- *
- * - `Ok`: on success.
- * - `CNull`: `pipeline` is a NULL pointer.
- */
-enum SpringErrno spring_source_row_close(SpringSourceRow *row);
+struct SpringSourceRow *spring_source_row_build(struct SpringSourceRowBuilder *builder);
 
 /**
  * Frees heap occupied by a `SpringSinkRow`.
@@ -258,7 +256,7 @@ enum SpringErrno spring_source_row_close(SpringSourceRow *row);
  * - `Ok`: on success.
  * - `CNull`: `pipeline` is a NULL pointer.
  */
-enum SpringErrno spring_sink_row_close(SpringSinkRow *row);
+enum SpringErrno spring_sink_row_close(struct SpringSinkRow *row);
 
 /**
  * Get a 2-byte integer column.
@@ -277,7 +275,7 @@ enum SpringErrno spring_sink_row_close(SpringSinkRow *row);
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_short(const SpringSinkRow *row, uint16_t i_col, short *out);
+enum SpringErrno spring_column_short(const struct SpringSinkRow *row, uint16_t i_col, short *out);
 
 /**
  * Get a 4-byte integer column.
@@ -296,7 +294,7 @@ enum SpringErrno spring_column_short(const SpringSinkRow *row, uint16_t i_col, s
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_int(const SpringSinkRow *row, uint16_t i_col, int *out);
+enum SpringErrno spring_column_int(const struct SpringSinkRow *row, uint16_t i_col, int *out);
 
 /**
  * Get an 8-byte integer column.
@@ -315,7 +313,7 @@ enum SpringErrno spring_column_int(const SpringSinkRow *row, uint16_t i_col, int
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_long(const SpringSinkRow *row, uint16_t i_col, long *out);
+enum SpringErrno spring_column_long(const struct SpringSinkRow *row, uint16_t i_col, long *out);
 
 /**
  * Get a 4-byte unsigned integer column.
@@ -334,7 +332,7 @@ enum SpringErrno spring_column_long(const SpringSinkRow *row, uint16_t i_col, lo
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_unsigned_int(const SpringSinkRow *row,
+enum SpringErrno spring_column_unsigned_int(const struct SpringSinkRow *row,
                                             uint16_t i_col,
                                             unsigned int *out);
 
@@ -356,7 +354,7 @@ enum SpringErrno spring_column_unsigned_int(const SpringSinkRow *row,
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-int spring_column_text(const SpringSinkRow *row, uint16_t i_col, char *out, int out_len);
+int spring_column_text(const struct SpringSinkRow *row, uint16_t i_col, char *out, int out_len);
 
 /**
  * Get a BLOB column.
@@ -376,7 +374,7 @@ int spring_column_text(const SpringSinkRow *row, uint16_t i_col, char *out, int 
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-int spring_column_blob(const SpringSinkRow *row, uint16_t i_col, void *out, int out_len);
+int spring_column_blob(const struct SpringSinkRow *row, uint16_t i_col, void *out, int out_len);
 
 /**
  * Get a bool column.
@@ -395,7 +393,7 @@ int spring_column_blob(const SpringSinkRow *row, uint16_t i_col, void *out, int 
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_bool(const SpringSinkRow *row, uint16_t i_col, bool *out);
+enum SpringErrno spring_column_bool(const struct SpringSinkRow *row, uint16_t i_col, bool *out);
 
 /**
  * Get a 4-byte floating point column.
@@ -414,7 +412,7 @@ enum SpringErrno spring_column_bool(const SpringSinkRow *row, uint16_t i_col, bo
  *   - `i_col` is out of range.
  * - `CNull`: Column value is NULL.
  */
-enum SpringErrno spring_column_float(const SpringSinkRow *row, uint16_t i_col, float *out);
+enum SpringErrno spring_column_float(const struct SpringSinkRow *row, uint16_t i_col, float *out);
 
 /**
  * Write the most recent error number into `errno_` and message into a caller-provided buffer as a UTF-8

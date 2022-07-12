@@ -7,6 +7,7 @@ use crate::spring_last_err::LastError;
 /// Errno (error number) to be returned erroneous functions.
 #[non_exhaustive]
 #[repr(C)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum SpringErrno {
     Ok = 0,
 

@@ -1,28 +1,24 @@
 // This file is part of https://github.com/SpringQL/SpringQL-client-c which is licensed under MIT OR Apache-2.0. See file LICENSE-MIT or LICENSE-APACHE for full license details.
-use ::springql::SpringConfig as RawSpringConfig;
-use std::{ffi::c_void, mem};
+use ::springql::{Result, SpringConfig as RuSpringConfig};
+
 /// Configuration.
 #[non_exhaustive]
-#[repr(transparent)]
-pub struct SpringConfig(*mut c_void);
+#[derive(Clone, Eq, PartialEq, Debug, Default)]
+pub struct SpringConfig(RuSpringConfig);
+
+impl AsRef<RuSpringConfig> for SpringConfig {
+    fn as_ref(&self) -> &RuSpringConfig {
+        &self.0
+    }
+}
 
 impl SpringConfig {
-    pub fn new(config: RawSpringConfig) -> Self {
-        SpringConfig(unsafe { mem::transmute(Box::new(config)) })
+    pub(crate) fn from_toml(toml: &str) -> Result<Self> {
+        let config = RuSpringConfig::from_toml(toml)?;
+        Ok(Self(config))
     }
 
-    pub fn as_config(&self) -> &RawSpringConfig {
-        unsafe { &*(self.0 as *const RawSpringConfig) }
-    }
-
-    pub fn drop(ptr: *mut SpringConfig) {
-        let outer = unsafe { Box::from_raw(ptr) };
-        let inner = unsafe { Box::from_raw(outer.0) };
-        drop(inner);
-        drop(outer);
-    }
-
-    pub fn into_ptr(self) -> *mut SpringConfig {
+    pub(crate) fn into_ptr(self) -> *mut SpringConfig {
         Box::into_raw(Box::new(self))
     }
 }

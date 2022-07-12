@@ -5,13 +5,17 @@
 #![allow(clippy::missing_safety_doc)] // C header file does not need `Safety` section
 
 pub(crate) mod c_mem;
-mod spring_config;
+
+pub mod spring_config;
 pub mod spring_errno;
 pub mod spring_last_err;
 mod spring_pipeline;
 mod spring_sink_row;
 mod spring_source_row;
 mod spring_source_row_builder;
+
+#[cfg(test)]
+mod tests;
 
 use std::{
     ffi::{c_void, CStr},
@@ -30,7 +34,10 @@ use crate::{
     spring_source_row::SpringSourceRow,
     spring_source_row_builder::SpringSourceRowBuilder,
 };
-use ::springql::{error::SpringError, SpringPipeline as Pipeline};
+use ::springql::{
+    error::SpringError, SpringPipeline as Pipeline, SpringSourceRow as RuSpringSourceRow,
+    SpringSourceRowBuilder as RuSpringSourceRowBuilder,
+};
 
 /// Returns default configuration.
 ///
@@ -38,8 +45,8 @@ use ::springql::{error::SpringError, SpringPipeline as Pipeline};
 /// If you would like to change the default configuration, use `spring_config_toml()` instead.
 #[no_mangle]
 pub extern "C" fn spring_config_default() -> *mut SpringConfig {
-    let config = ::springql::SpringConfig::default();
-    SpringConfig::new(config).into_ptr()
+    let config = SpringConfig::default();
+    config.into_ptr()
 }
 
 /// Configuration by TOML format string.
@@ -64,8 +71,8 @@ pub unsafe extern "C" fn spring_config_toml(
     let s = CStr::from_ptr(overwrite_config_toml);
     let s = s.to_str().expect("failed to parse TOML string into UTF-8");
 
-    let config = springql::SpringConfig::new(s).expect("failed to parse TOML config");
-    SpringConfig::new(config).into_ptr()
+    let config = SpringConfig::from_toml(s).expect("failed to parse TOML config");
+    config.into_ptr()
 }
 
 /// Frees heap occupied by a `SpringConfig`.
@@ -79,7 +86,7 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
     if config.is_null() {
         SpringErrno::CNull
     } else {
-        SpringConfig::drop(config);
+        let _ = Box::from_raw(config);
         SpringErrno::Ok
     }
 }
@@ -96,13 +103,10 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
 /// No errors are expected currently.
 #[no_mangle]
 pub unsafe extern "C" fn spring_open(config: *const SpringConfig) -> *mut SpringPipeline {
-    let config = (*config).as_config();
-    let pipeline = Pipeline::new(config);
-    match pipeline {
-        Ok(pipe) => {
-            let ptr = SpringPipeline::new(pipe);
-            ptr.into_ptr()
-        }
+    let config = &*config;
+    let res_ru_pipeline = with_catch(|| Pipeline::new(config.as_ref()));
+    match res_ru_pipeline {
+        Ok(ru_pipeline) => SpringPipeline::from(ru_pipeline).into_ptr(),
         Err(_err) => ptr::null_mut(),
     }
 }
@@ -118,7 +122,7 @@ pub unsafe extern "C" fn spring_close(pipeline: *mut SpringPipeline) -> SpringEr
     if pipeline.is_null() {
         SpringErrno::CNull
     } else {
-        SpringPipeline::drop(pipeline);
+        let _ = Box::from_raw(pipeline);
         SpringErrno::Ok
     }
 }
@@ -139,9 +143,9 @@ pub unsafe extern "C" fn spring_command(
     pipeline: *const SpringPipeline,
     sql: *const c_char,
 ) -> SpringErrno {
-    let pipe = (*pipeline).as_pipeline();
+    let ru_pipeline = (*pipeline).as_ref();
     let sql = CStr::from_ptr(sql).to_string_lossy().into_owned();
-    let result = with_catch(|| pipe.command(sql));
+    let result = with_catch(|| ru_pipeline.command(sql));
 
     match result {
         Ok(_) => SpringErrno::Ok,
@@ -168,12 +172,12 @@ pub unsafe extern "C" fn spring_pop(
     pipeline: *const SpringPipeline,
     queue: *const c_char,
 ) -> *mut SpringSinkRow {
-    let pipeline = (*pipeline).as_pipeline();
+    let ru_pipeline = (*pipeline).as_ref();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
-    let result = with_catch(|| pipeline.pop(&queue));
+    let result = with_catch(|| ru_pipeline.pop(&queue));
     match result {
-        Ok(row) => {
-            let row = SpringSinkRow::new(row);
+        Ok(ru_row) => {
+            let row = SpringSinkRow::from(ru_row);
             row.into_ptr()
         }
         Err(_) => ptr::null_mut(),
@@ -196,14 +200,13 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
     queue: *const c_char,
     is_err: *mut bool,
 ) -> *mut SpringSinkRow {
-    let pipeline = (*pipeline).as_pipeline();
+    let ru_pipeline = (*pipeline).as_ref();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
-    let result = with_catch(|| pipeline.pop_non_blocking(&queue));
+    let result = with_catch(|| ru_pipeline.pop_non_blocking(&queue));
     match result {
         Ok(Some(row)) => {
-            let ptr = SpringSinkRow::new(row);
             *is_err = false;
-            ptr.into_ptr()
+            SpringSinkRow::from(row).into_ptr()
         }
         Ok(None) => {
             *is_err = false;
@@ -218,6 +221,8 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
 
 /// Push a row into an in memory queue. This is a non-blocking function.
 ///
+/// `row` is freed internally.
+///
 /// # Returns
 ///
 /// - `Ok`: on success.
@@ -226,12 +231,14 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
 pub unsafe extern "C" fn spring_push(
     pipeline: *const SpringPipeline,
     queue: *const c_char,
-    row: *const SpringSourceRow,
+    row: *mut SpringSourceRow,
 ) -> SpringErrno {
-    let pipeline = (*pipeline).as_pipeline();
+    let ru_pipeline = (*pipeline).as_ref();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
-    let source_row = (*row).to_row();
-    let result = with_catch(|| pipeline.push(&queue, source_row));
+
+    let source_row = Box::from_raw(row);
+    let source_row = RuSpringSourceRow::from(*source_row);
+    let result = with_catch(|| ru_pipeline.push(&queue, source_row));
     match result {
         Ok(()) => SpringErrno::Ok,
         Err(e) => e,
@@ -251,9 +258,9 @@ pub unsafe extern "C" fn spring_push(
 #[no_mangle]
 pub unsafe extern "C" fn spring_source_row_from_json(json: *const c_char) -> *mut SpringSourceRow {
     let json = CStr::from_ptr(json).to_string_lossy().into_owned();
-    let res_source_row = with_catch(|| ::springql::SpringSourceRow::from_json(&json));
-    match res_source_row {
-        Ok(source_row) => SpringSourceRow::new(source_row).into_ptr(),
+    let res_ru_source_row = with_catch(|| ::springql::SpringSourceRow::from_json(&json));
+    match res_ru_source_row {
+        Ok(ru_source_row) => SpringSourceRow::from(ru_source_row).into_ptr(),
         Err(_) => ptr::null_mut(),
     }
 }
@@ -267,7 +274,9 @@ pub unsafe extern "C" fn spring_source_row_from_json(json: *const c_char) -> *mu
 pub unsafe extern "C" fn spring_source_row_builder() -> *mut SpringSourceRowBuilder {
     SpringSourceRowBuilder::default().into_ptr()
 }
-/// Add a BLOB column to the builder.
+/// Add a BLOB column to the builder and return the new one.
+///
+/// `builder` is freed internally.
 ///
 /// # Parameters
 ///
@@ -278,7 +287,11 @@ pub unsafe extern "C" fn spring_source_row_builder() -> *mut SpringSourceRowBuil
 ///
 /// # Returns
 ///
-/// - `Ok`: on success.
+/// - non-NULL: Successfully created a row.
+/// - NULL: Error occurred.
+///
+/// # Errors
+///
 /// - `Sql`: `column_name` is already added to the builder.
 #[no_mangle]
 pub unsafe extern "C" fn spring_source_row_add_column_blob(
@@ -286,21 +299,19 @@ pub unsafe extern "C" fn spring_source_row_add_column_blob(
     column_name: *const c_char,
     v: *const c_void,
     v_len: c_int,
-) -> SpringErrno {
+) -> *mut SpringSourceRowBuilder {
     let column_name = CStr::from_ptr(column_name).to_string_lossy().into_owned();
 
     let v = v as *const u8;
     let v = slice::from_raw_parts(v, v_len as usize);
     let v = v.to_vec();
 
-    let rust_builder = (*builder).to_row_builder();
-    let res_rust_builder = with_catch(|| rust_builder.add_column(column_name, v));
-    match res_rust_builder {
-        Ok(rust_builder) => {
-            *builder = SpringSourceRowBuilder::new(rust_builder);
-            SpringErrno::Ok
-        }
-        Err(e) => e,
+    let builder = Box::from_raw(builder);
+    let ru_builder = RuSpringSourceRowBuilder::from(*builder);
+    let res_ru_builder = with_catch(|| ru_builder.add_column(column_name, v));
+    match res_ru_builder {
+        Ok(ru_builder) => SpringSourceRowBuilder::from(ru_builder).into_ptr(),
+        Err(_) => ptr::null_mut(),
     }
 }
 /// Finish creating a source row using a builder.
@@ -314,26 +325,9 @@ pub unsafe extern "C" fn spring_source_row_add_column_blob(
 pub unsafe extern "C" fn spring_source_row_build(
     builder: *mut SpringSourceRowBuilder,
 ) -> *mut SpringSourceRow {
-    let rust_builder = (*builder).to_row_builder();
-    let ret = SpringSourceRow::new(rust_builder.build()).into_ptr();
-    SpringSourceRowBuilder::drop(builder);
-    ret
-}
-
-/// Frees heap occupied by a `SpringSourceRow`.
-///
-/// # Returns
-///
-/// - `Ok`: on success.
-/// - `CNull`: `pipeline` is a NULL pointer.
-#[no_mangle]
-pub extern "C" fn spring_source_row_close(row: *mut SpringSourceRow) -> SpringErrno {
-    if row.is_null() {
-        SpringErrno::CNull
-    } else {
-        SpringSourceRow::drop(row);
-        SpringErrno::Ok
-    }
+    let builder = Box::from_raw(builder);
+    let ru_builder = RuSpringSourceRowBuilder::from(*builder);
+    SpringSourceRow::from(ru_builder.build()).into_ptr()
 }
 
 /// Frees heap occupied by a `SpringSinkRow`.
@@ -343,11 +337,11 @@ pub extern "C" fn spring_source_row_close(row: *mut SpringSourceRow) -> SpringEr
 /// - `Ok`: on success.
 /// - `CNull`: `pipeline` is a NULL pointer.
 #[no_mangle]
-pub extern "C" fn spring_sink_row_close(row: *mut SpringSinkRow) -> SpringErrno {
+pub unsafe extern "C" fn spring_sink_row_close(row: *mut SpringSinkRow) -> SpringErrno {
     if row.is_null() {
         SpringErrno::CNull
     } else {
-        SpringSinkRow::drop(row);
+        let _ = Box::from_raw(row);
         SpringErrno::Ok
     }
 }
@@ -373,7 +367,7 @@ pub unsafe extern "C" fn spring_column_short(
     i_col: u16,
     out: *mut c_short,
 ) -> SpringErrno {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -406,7 +400,7 @@ pub unsafe extern "C" fn spring_column_int(
     i_col: u16,
     out: *mut c_int,
 ) -> SpringErrno {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -439,7 +433,7 @@ pub unsafe extern "C" fn spring_column_long(
     i_col: u16,
     out: *mut c_long,
 ) -> SpringErrno {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -472,7 +466,7 @@ pub unsafe extern "C" fn spring_column_unsigned_int(
     i_col: u16,
     out: *mut c_uint,
 ) -> SpringErrno {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -507,7 +501,7 @@ pub unsafe extern "C" fn spring_column_text(
     out: *mut c_char,
     out_len: c_int,
 ) -> c_int {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result: Result<String, SpringErrno> =
         with_catch(|| row.get_not_null_by_index(i_col as usize));
@@ -543,7 +537,7 @@ pub unsafe extern "C" fn spring_column_blob(
     out: *mut c_void,
     out_len: c_int,
 ) -> c_int {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result: Result<Vec<u8>, SpringErrno> =
         with_catch(|| row.get_not_null_by_index(i_col as usize));
@@ -577,7 +571,7 @@ pub unsafe extern "C" fn spring_column_bool(
     i_col: u16,
     out: *mut bool,
 ) -> SpringErrno {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -610,7 +604,7 @@ pub unsafe extern "C" fn spring_column_float(
     i_col: u16,
     out: *mut c_float,
 ) -> SpringErrno {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
