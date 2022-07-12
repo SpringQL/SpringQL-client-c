@@ -19,7 +19,6 @@ fn test_spring_source_row_builder() {
         );
         assert!(!builder.is_null());
 
-        let row = spring_source_row_build(builder);
-        spring_source_row_close(row);
+        let _row = spring_source_row_build(builder);
     }
 }

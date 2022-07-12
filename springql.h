@@ -177,6 +177,8 @@ SpringSinkRow *spring_pop_non_blocking(const struct SpringPipeline *pipeline,
 /**
  * Push a row into an in memory queue. This is a non-blocking function.
  *
+ * `row` is freed internally.
+ *
  * # Returns
  *
  * - `Ok`: on success.
@@ -245,16 +247,6 @@ struct SpringSourceRowBuilder *spring_source_row_add_column_blob(struct SpringSo
  * SpringSourceRow
  */
 struct SpringSourceRow *spring_source_row_build(struct SpringSourceRowBuilder *builder);
-
-/**
- * Frees heap occupied by a `SpringSourceRow`.
- *
- * # Returns
- *
- * - `Ok`: on success.
- * - `CNull`: `pipeline` is a NULL pointer.
- */
-enum SpringErrno spring_source_row_close(struct SpringSourceRow *row);
 
 /**
  * Frees heap occupied by a `SpringSinkRow`.

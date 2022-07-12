@@ -222,6 +222,8 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
 
 /// Push a row into an in memory queue. This is a non-blocking function.
 ///
+/// `row` is freed internally.
+/// 
 /// # Returns
 ///
 /// - `Ok`: on success.
@@ -327,22 +329,6 @@ pub unsafe extern "C" fn spring_source_row_build(
     let builder = Box::from_raw(builder);
     let ru_builder = RuSpringSourceRowBuilder::from(*builder);
     SpringSourceRow::from(ru_builder.build()).into_ptr()
-}
-
-/// Frees heap occupied by a `SpringSourceRow`.
-///
-/// # Returns
-///
-/// - `Ok`: on success.
-/// - `CNull`: `pipeline` is a NULL pointer.
-#[no_mangle]
-pub unsafe extern "C" fn spring_source_row_close(row: *mut SpringSourceRow) -> SpringErrno {
-    if row.is_null() {
-        SpringErrno::CNull
-    } else {
-        let _ = Box::from_raw(row);
-        SpringErrno::Ok
-    }
 }
 
 /// Frees heap occupied by a `SpringSinkRow`.
