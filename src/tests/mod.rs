@@ -26,7 +26,7 @@ fn test_spring_source_row_builder() {
             c1_value.as_ptr().cast(),
             c1_value.len().try_into().unwrap(),
         );
-        assert_eq!(errno as i32, SpringErrno::Ok as i32);
+        assert_eq!(errno, SpringErrno::Ok);
 
         let row = spring_source_row_build(builder);
         spring_source_row_close(row);
