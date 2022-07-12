@@ -5,7 +5,7 @@
 #![allow(clippy::missing_safety_doc)] // C header file does not need `Safety` section
 
 pub(crate) mod c_mem;
-mod spring_config;
+
 pub mod spring_errno;
 pub mod spring_last_err;
 mod spring_pipeline;
@@ -25,7 +25,6 @@ use std::{
 
 use crate::{
     c_mem::{memcpy, strcpy},
-    spring_config::SpringConfig,
     spring_errno::SpringErrno,
     spring_last_err::{update_last_error, LastError},
     spring_pipeline::SpringPipeline,
@@ -34,6 +33,7 @@ use crate::{
     spring_source_row_builder::SpringSourceRowBuilder,
 };
 use ::springql::{error::SpringError, SpringPipeline as Pipeline};
+use springql::SpringConfig;
 
 /// Returns default configuration.
 ///
@@ -41,8 +41,8 @@ use ::springql::{error::SpringError, SpringPipeline as Pipeline};
 /// If you would like to change the default configuration, use `spring_config_toml()` instead.
 #[no_mangle]
 pub extern "C" fn spring_config_default() -> *mut SpringConfig {
-    let config = ::springql::SpringConfig::default();
-    SpringConfig::new(config).into_ptr()
+    let config = SpringConfig::default();
+    Box::into_raw(Box::new(config))
 }
 
 /// Configuration by TOML format string.
@@ -67,8 +67,8 @@ pub unsafe extern "C" fn spring_config_toml(
     let s = CStr::from_ptr(overwrite_config_toml);
     let s = s.to_str().expect("failed to parse TOML string into UTF-8");
 
-    let config = springql::SpringConfig::new(s).expect("failed to parse TOML config");
-    SpringConfig::new(config).into_ptr()
+    let config = SpringConfig::new(s).expect("failed to parse TOML config");
+    Box::into_raw(Box::new(config))
 }
 
 /// Frees heap occupied by a `SpringConfig`.
@@ -82,7 +82,7 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
     if config.is_null() {
         SpringErrno::CNull
     } else {
-        SpringConfig::drop(config);
+        let _ = Box::from_raw(config);
         SpringErrno::Ok
     }
 }
@@ -99,7 +99,7 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
 /// No errors are expected currently.
 #[no_mangle]
 pub unsafe extern "C" fn spring_open(config: *const SpringConfig) -> *mut SpringPipeline {
-    let config = (*config).as_config();
+    let config = &*config;
     let pipeline = Pipeline::new(config);
     match pipeline {
         Ok(pipe) => {

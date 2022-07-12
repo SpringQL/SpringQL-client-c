@@ -40,11 +40,6 @@ typedef enum SpringErrno {
 } SpringErrno;
 
 /**
- * Configuration.
- */
-typedef void *SpringConfig;
-
-/**
  * Pipeline (dataflow definition) in SpringQL.
  */
 typedef void *SpringPipeline;
