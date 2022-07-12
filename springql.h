@@ -45,6 +45,11 @@ typedef enum SpringErrno {
 typedef struct SpringConfig SpringConfig;
 
 /**
+ * Pipeline (dataflow definition) in SpringQL.
+ */
+typedef struct SpringPipeline SpringPipeline;
+
+/**
  * Row object to push into an in memory queue.
  */
 typedef struct SpringSourceRow SpringSourceRow;
@@ -53,11 +58,6 @@ typedef struct SpringSourceRow SpringSourceRow;
  * Builder of SpringSourceRow
  */
 typedef struct SpringSourceRowBuilder SpringSourceRowBuilder;
-
-/**
- * Pipeline (dataflow definition) in SpringQL.
- */
-typedef void *SpringPipeline;
 
 /**
  * Row object to pop from an in memory queue.
@@ -113,7 +113,7 @@ enum SpringErrno spring_config_close(struct SpringConfig *config);
  *
  * No errors are expected currently.
  */
-SpringPipeline *spring_open(const struct SpringConfig *config);
+struct SpringPipeline *spring_open(const struct SpringConfig *config);
 
 /**
  * Frees heap occupied by a `SpringPipeline`.
@@ -123,7 +123,7 @@ SpringPipeline *spring_open(const struct SpringConfig *config);
  * - `Ok`: on success.
  * - `CNull`: `pipeline` is a NULL pointer.
  */
-enum SpringErrno spring_close(SpringPipeline *pipeline);
+enum SpringErrno spring_close(struct SpringPipeline *pipeline);
 
 /**
  * Execute commands (DDL) to modify the pipeline.
@@ -138,7 +138,7 @@ enum SpringErrno spring_close(SpringPipeline *pipeline);
  * - `InvalidOption`:
  *   - `OPTIONS` in `CREATE` statement includes invalid key or value.
  */
-enum SpringErrno spring_command(const SpringPipeline *pipeline, const char *sql);
+enum SpringErrno spring_command(const struct SpringPipeline *pipeline, const char *sql);
 
 /**
  * Pop a row from an in memory queue. This is a blocking function.
@@ -156,7 +156,7 @@ enum SpringErrno spring_command(const SpringPipeline *pipeline, const char *sql)
  *
  * - `Unavailable`: queue named `queue` does not exist.
  */
-SpringSinkRow *spring_pop(const SpringPipeline *pipeline, const char *queue);
+SpringSinkRow *spring_pop(const struct SpringPipeline *pipeline, const char *queue);
 
 /**
  * Pop a row from an in memory queue. This is a non-blocking function.
@@ -170,7 +170,7 @@ SpringSinkRow *spring_pop(const SpringPipeline *pipeline, const char *queue);
  *
  * - `Unavailable`: queue named `queue` does not exist.
  */
-SpringSinkRow *spring_pop_non_blocking(const SpringPipeline *pipeline,
+SpringSinkRow *spring_pop_non_blocking(const struct SpringPipeline *pipeline,
                                        const char *queue,
                                        bool *is_err);
 
@@ -182,7 +182,7 @@ SpringSinkRow *spring_pop_non_blocking(const SpringPipeline *pipeline,
  * - `Ok`: on success.
  * - `Unavailable`: queue named `queue` does not exist.
  */
-enum SpringErrno spring_push(const SpringPipeline *pipeline,
+enum SpringErrno spring_push(const struct SpringPipeline *pipeline,
                              const char *queue,
                              struct SpringSourceRow *row);
 

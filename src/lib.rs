@@ -104,12 +104,9 @@ pub unsafe extern "C" fn spring_config_close(config: *mut SpringConfig) -> Sprin
 #[no_mangle]
 pub unsafe extern "C" fn spring_open(config: *const SpringConfig) -> *mut SpringPipeline {
     let config = &*config;
-    let pipeline = Pipeline::new(config.as_ref());
-    match pipeline {
-        Ok(pipe) => {
-            let ptr = SpringPipeline::new(pipe);
-            ptr.into_ptr()
-        }
+    let res_ru_pipeline = with_catch(|| Pipeline::new(config.as_ref()));
+    match res_ru_pipeline {
+        Ok(ru_pipeline) => SpringPipeline::from(ru_pipeline).into_ptr(),
         Err(_err) => ptr::null_mut(),
     }
 }
@@ -125,7 +122,7 @@ pub unsafe extern "C" fn spring_close(pipeline: *mut SpringPipeline) -> SpringEr
     if pipeline.is_null() {
         SpringErrno::CNull
     } else {
-        SpringPipeline::drop(pipeline);
+        let _ = Box::from_raw(pipeline);
         SpringErrno::Ok
     }
 }
@@ -146,9 +143,9 @@ pub unsafe extern "C" fn spring_command(
     pipeline: *const SpringPipeline,
     sql: *const c_char,
 ) -> SpringErrno {
-    let pipe = (*pipeline).as_pipeline();
+    let ru_pipeline = (*pipeline).as_ref();
     let sql = CStr::from_ptr(sql).to_string_lossy().into_owned();
-    let result = with_catch(|| pipe.command(sql));
+    let result = with_catch(|| ru_pipeline.command(sql));
 
     match result {
         Ok(_) => SpringErrno::Ok,
@@ -175,9 +172,9 @@ pub unsafe extern "C" fn spring_pop(
     pipeline: *const SpringPipeline,
     queue: *const c_char,
 ) -> *mut SpringSinkRow {
-    let pipeline = (*pipeline).as_pipeline();
+    let ru_pipeline = (*pipeline).as_ref();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
-    let result = with_catch(|| pipeline.pop(&queue));
+    let result = with_catch(|| ru_pipeline.pop(&queue));
     match result {
         Ok(row) => {
             let row = SpringSinkRow::new(row);
@@ -203,9 +200,9 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
     queue: *const c_char,
     is_err: *mut bool,
 ) -> *mut SpringSinkRow {
-    let pipeline = (*pipeline).as_pipeline();
+    let ru_pipeline = (*pipeline).as_ref();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
-    let result = with_catch(|| pipeline.pop_non_blocking(&queue));
+    let result = with_catch(|| ru_pipeline.pop_non_blocking(&queue));
     match result {
         Ok(Some(row)) => {
             let ptr = SpringSinkRow::new(row);
@@ -235,12 +232,12 @@ pub unsafe extern "C" fn spring_push(
     queue: *const c_char,
     row: *mut SpringSourceRow,
 ) -> SpringErrno {
-    let pipeline = (*pipeline).as_pipeline();
+    let ru_pipeline = (*pipeline).as_ref();
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
 
     let source_row = Box::from_raw(row);
     let source_row = RuSpringSourceRow::from(*source_row);
-    let result = with_catch(|| pipeline.push(&queue, source_row));
+    let result = with_catch(|| ru_pipeline.push(&queue, source_row));
     match result {
         Ok(()) => SpringErrno::Ok,
         Err(e) => e,
