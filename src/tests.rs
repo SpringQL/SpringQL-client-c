@@ -2,4 +2,5 @@
 
 mod spring_config;
 mod spring_open;
+mod spring_sink_row;
 mod spring_source_row_builder;
