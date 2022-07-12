@@ -176,8 +176,8 @@ pub unsafe extern "C" fn spring_pop(
     let queue = CStr::from_ptr(queue).to_string_lossy().into_owned();
     let result = with_catch(|| ru_pipeline.pop(&queue));
     match result {
-        Ok(row) => {
-            let row = SpringSinkRow::new(row);
+        Ok(ru_row) => {
+            let row = SpringSinkRow::from(ru_row);
             row.into_ptr()
         }
         Err(_) => ptr::null_mut(),
@@ -205,9 +205,8 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
     let result = with_catch(|| ru_pipeline.pop_non_blocking(&queue));
     match result {
         Ok(Some(row)) => {
-            let ptr = SpringSinkRow::new(row);
             *is_err = false;
-            ptr.into_ptr()
+            SpringSinkRow::from(row).into_ptr()
         }
         Ok(None) => {
             *is_err = false;
@@ -223,7 +222,7 @@ pub unsafe extern "C" fn spring_pop_non_blocking(
 /// Push a row into an in memory queue. This is a non-blocking function.
 ///
 /// `row` is freed internally.
-/// 
+///
 /// # Returns
 ///
 /// - `Ok`: on success.
@@ -338,11 +337,11 @@ pub unsafe extern "C" fn spring_source_row_build(
 /// - `Ok`: on success.
 /// - `CNull`: `pipeline` is a NULL pointer.
 #[no_mangle]
-pub extern "C" fn spring_sink_row_close(row: *mut SpringSinkRow) -> SpringErrno {
+pub unsafe extern "C" fn spring_sink_row_close(row: *mut SpringSinkRow) -> SpringErrno {
     if row.is_null() {
         SpringErrno::CNull
     } else {
-        SpringSinkRow::drop(row);
+        let _ = Box::from_raw(row);
         SpringErrno::Ok
     }
 }
@@ -368,7 +367,7 @@ pub unsafe extern "C" fn spring_column_short(
     i_col: u16,
     out: *mut c_short,
 ) -> SpringErrno {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -401,7 +400,7 @@ pub unsafe extern "C" fn spring_column_int(
     i_col: u16,
     out: *mut c_int,
 ) -> SpringErrno {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -434,7 +433,7 @@ pub unsafe extern "C" fn spring_column_long(
     i_col: u16,
     out: *mut c_long,
 ) -> SpringErrno {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -467,7 +466,7 @@ pub unsafe extern "C" fn spring_column_unsigned_int(
     i_col: u16,
     out: *mut c_uint,
 ) -> SpringErrno {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -502,7 +501,7 @@ pub unsafe extern "C" fn spring_column_text(
     out: *mut c_char,
     out_len: c_int,
 ) -> c_int {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result: Result<String, SpringErrno> =
         with_catch(|| row.get_not_null_by_index(i_col as usize));
@@ -538,7 +537,7 @@ pub unsafe extern "C" fn spring_column_blob(
     out: *mut c_void,
     out_len: c_int,
 ) -> c_int {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result: Result<Vec<u8>, SpringErrno> =
         with_catch(|| row.get_not_null_by_index(i_col as usize));
@@ -572,7 +571,7 @@ pub unsafe extern "C" fn spring_column_bool(
     i_col: u16,
     out: *mut bool,
 ) -> SpringErrno {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
@@ -605,7 +604,7 @@ pub unsafe extern "C" fn spring_column_float(
     i_col: u16,
     out: *mut c_float,
 ) -> SpringErrno {
-    let row = (*row).as_row();
+    let row = &*row;
     let i_col = i_col as usize;
     let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
     match result {
