@@ -55,6 +55,11 @@ jobs:
             os: ubuntu-latest
             rust: 1.57.0
 
+          - make:
+              task: miri
+            os: ubuntu-latest
+            rust: nightly
+
           # Example does not cover various envs. Should be done in test.
           - make:
               task: example-run
@@ -111,6 +116,12 @@ jobs:
           curl -L "${BASE_URL}/${VERSION}/${FILE_BASE}" --output $HOME/.local/bin/cargo-deadlinks
           chmod +x $HOME/.local/bin/cargo-deadlinks
           cargo deadlinks --version
+
+      - name: Install Miri
+        if: ${{ matrix.make.install-miri }}
+        run: |
+          rustup toolchain install nightly --component miri
+          cargo +nightly miri setup
 
       - name: Install mlc
         if: ${{ matrix.make.install-mlc }}
