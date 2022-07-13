@@ -54,10 +54,6 @@ jobs:
               task: test
             os: ubuntu-latest
             rust: 1.57.0
-          - make:
-              task: test
-            os: macos-latest
-            rust: stable
 
           # Example does not cover various envs. Should be done in test.
           - make:
