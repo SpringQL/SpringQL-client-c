@@ -57,6 +57,7 @@ jobs:
 
           - make:
               task: miri
+              install-miri: true
             os: ubuntu-latest
             rust: nightly
 
