@@ -28,6 +28,12 @@ script = ['''
 RUSTFLAGS='-D warnings' cargo test --workspace --all-targets --all-features
 ''']
 
+[tasks.miri]
+script = ['''
+#!/usr/bin/env bash -eux
+RUSTFLAGS='-D warnings' MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --workspace --all-targets --all-features
+''']
+
 [tasks.example-build]
 dependencies = ["build"]
 script = ['''
