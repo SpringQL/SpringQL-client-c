@@ -1035,16 +1035,16 @@ dependencies = [
 
 [[package]]
 name = "springql"
-version = "0.16.1"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9121b104aaee729599229d6227ef39fb53780771d53f6a4958d12d1da21a273d"
+checksum = "36b7f8b6bc10b8dd6eb1ce1e6f6505197e1a5a6bfcf5cda3355c2f3b7241af84"
 dependencies = [
  "springql-core",
 ]
 
 [[package]]
 name = "springql-client-c"
-version = "0.16.1"
+version = "0.17.1"
 dependencies = [
  "cbindgen",
  "log",
@@ -1053,9 +1053,9 @@ dependencies = [
 
 [[package]]
 name = "springql-core"
-version = "0.16.0"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96d5ef360ba75b988473437fa942f1f6938367e9ed634d623259eff07356e6f1"
+checksum = "cb801086b842015bf7d91f1e2e94ce1088fac898dd62ff4557ab84a042370ec9"
 dependencies = [
  "anyhow",
  "config",
