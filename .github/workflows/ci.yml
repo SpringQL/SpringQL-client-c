@@ -76,18 +76,9 @@ jobs:
           components: rustfmt, clippy, llvm-tools-preview
           override: true
 
-      - name: Cache cargo registry
-        if: ${{ ! matrix.make.rust-free }}
-        uses: actions/cache@v2
-        continue-on-error: false
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ env.CACHE_RESET_KEY }}-${{ runner.os }}-${{ matrix.rust }}-cargo-${{ matrix.make.task }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ env.CACHE_RESET_KEY }}-${{ runner.os }}-${{ matrix.rust }}-cargo-${{ matrix.make.task }}-
-            ${{ env.CACHE_RESET_KEY }}-${{ runner.os }}-${{ matrix.rust }}-cargo-
+          key: ${{ matrix.make.task }}
 
       - name: Install cargo-make
         env:

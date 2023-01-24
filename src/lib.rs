@@ -369,7 +369,7 @@ pub unsafe extern "C" fn spring_column_short(
 ) -> SpringErrno {
     let row = &*row;
     let i_col = i_col as usize;
-    let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
+    let result = with_catch(|| row.get_not_null_by_index(i_col));
     match result {
         Ok(v) => {
             *out = v;
@@ -402,7 +402,7 @@ pub unsafe extern "C" fn spring_column_int(
 ) -> SpringErrno {
     let row = &*row;
     let i_col = i_col as usize;
-    let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
+    let result = with_catch(|| row.get_not_null_by_index(i_col));
     match result {
         Ok(v) => {
             *out = v;
@@ -435,7 +435,7 @@ pub unsafe extern "C" fn spring_column_long(
 ) -> SpringErrno {
     let row = &*row;
     let i_col = i_col as usize;
-    let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
+    let result = with_catch(|| row.get_not_null_by_index(i_col));
     match result {
         Ok(v) => {
             *out = v;
@@ -468,7 +468,7 @@ pub unsafe extern "C" fn spring_column_unsigned_int(
 ) -> SpringErrno {
     let row = &*row;
     let i_col = i_col as usize;
-    let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
+    let result = with_catch(|| row.get_not_null_by_index(i_col));
     match result {
         Ok(v) => {
             *out = v;
@@ -503,8 +503,7 @@ pub unsafe extern "C" fn spring_column_text(
 ) -> c_int {
     let row = &*row;
     let i_col = i_col as usize;
-    let result: Result<String, SpringErrno> =
-        with_catch(|| row.get_not_null_by_index(i_col as usize));
+    let result: Result<String, SpringErrno> = with_catch(|| row.get_not_null_by_index(i_col));
     match result {
         Ok(v) => {
             let v_len = strcpy(&v, out, out_len);
@@ -539,8 +538,7 @@ pub unsafe extern "C" fn spring_column_blob(
 ) -> c_int {
     let row = &*row;
     let i_col = i_col as usize;
-    let result: Result<Vec<u8>, SpringErrno> =
-        with_catch(|| row.get_not_null_by_index(i_col as usize));
+    let result: Result<Vec<u8>, SpringErrno> = with_catch(|| row.get_not_null_by_index(i_col));
     match result {
         Ok(v) => {
             let v_len = memcpy(&v, out, out_len);
@@ -573,7 +571,7 @@ pub unsafe extern "C" fn spring_column_bool(
 ) -> SpringErrno {
     let row = &*row;
     let i_col = i_col as usize;
-    let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
+    let result = with_catch(|| row.get_not_null_by_index(i_col));
     match result {
         Ok(v) => {
             *out = v;
@@ -606,7 +604,7 @@ pub unsafe extern "C" fn spring_column_float(
 ) -> SpringErrno {
     let row = &*row;
     let i_col = i_col as usize;
-    let result = with_catch(|| row.get_not_null_by_index(i_col as usize));
+    let result = with_catch(|| row.get_not_null_by_index(i_col));
     match result {
         Ok(v) => {
             *out = v;
