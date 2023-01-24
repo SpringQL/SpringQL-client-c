@@ -85,7 +85,7 @@ cargo doc --no-deps --all-features
 script = ['''
 #!/usr/bin/env bash -eux
 cargo doc
-for crate in $( cargo metadata --format-version=1 --no-deps | jq -r '.packages | map(.name) | .[]' | tr '-' '_' ); do
+for crate in $( cargo metadata --format-version=1 --no-deps | jq -r '.packages | map(.targets)[0][] | select(.doc) | .name' ); do
   cargo deadlinks --check-http --ignore-fragments --dir target/doc/${crate}
 done
 mlc --ignore-path target
